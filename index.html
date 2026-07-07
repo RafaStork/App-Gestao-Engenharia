@@ -1142,7 +1142,8 @@ async function viewTabela(tableName){
         return `<td${cls}>${content}</td>`;
       }).join('');
       const detalhesCell = cfg.detalhavel ? `<td class="row-actions"><button class="icon-btn" onclick="abrirDetalhes('${tableName}','${r.id}')">detalhes</button></td>` : '';
-      const podeExcluir = currentProfile.role === 'admin' || currentProfile.role === 'gestor';
+      const podeExcluir = currentProfile.role === 'admin' || currentProfile.role === 'gestor'
+        || (currentProfile.role === 'usuario' && tableName === 'chamados_sac');
       const actions = canWrite ? `<td class="row-actions">${podeExcluir ? `<button class="icon-btn" onclick="deleteRow('${tableName}','${r.id}')">excluir</button>` : ''}</td>` : '';
       return `<tr>${detalhesCell}${cells}${actions}</tr>`;
     }).join('');
@@ -1252,12 +1253,21 @@ async function viewTabela(tableName){
         if (f.edit==='text' && !f.readonly) defaults[f.key]='Novo — clique para editar';
       });
       if (tableName==='vendas_expansao') defaults.criado_por = currentUser.id;
-      const { data: novo, error } = await sb.from(tableName).insert(defaults).select().single();
+      // Gera o id no navegador em vez de pedir pro banco "devolver" a linha
+      // recém-criada: pra papel "usuario", a política de leitura só libera
+      // depois que ele vira responsável (próximo passo), então pedir a
+      // linha de volta na mesma hora do INSERT falharia por RLS.
+      let novoId = null;
+      if (tableName==='chamados_sac'){
+        novoId = crypto.randomUUID();
+        defaults.id = novoId;
+      }
+      const { error } = await sb.from(tableName).insert(defaults);
       if (error) return toast('Erro ao criar: '+error.message, true);
       if (tableName==='chamados_sac'){
         // Quem cria já entra como responsável, senão não conseguiria ver o
         // que acabou de criar (regra de RLS pra papel "usuario").
-        await sb.from('chamados_sac_responsaveis').insert({ chamado_id: novo.id, profile_id: currentUser.id });
+        await sb.from('chamados_sac_responsaveis').insert({ chamado_id: novoId, profile_id: currentUser.id });
       }
       toast('Registro criado — edite os campos na linha.');
       navigateTo(currentView);
