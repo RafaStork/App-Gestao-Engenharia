@@ -143,6 +143,8 @@ tbody tr:hover{background:var(--bg-soft);}
 textarea.cell-input{resize:vertical; min-height:34px; font-family:var(--font);}
 .cell-saved{animation: flashSaved .9s ease;}
 @keyframes flashSaved{ 0%{background:var(--c-sage);} 100%{background:transparent;} }
+@keyframes flashSavedCor{ 0%{box-shadow:0 0 0 3px var(--c-sage);} 100%{box-shadow:0 0 0 0px transparent;} }
+.cell-saved-cor{ animation: flashSavedCor .7s ease; }
 
 .badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; font-size:11px; font-weight:700; border-radius:999px; color:#fff; white-space:nowrap; }
 .badge-dot{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.85);}
@@ -387,6 +389,10 @@ function toast(msg, isErr=false){
   window.__toastTimer = setTimeout(()=> t.className='', 3000);
 }
 function flashSaved(el){ el.classList.add('cell-saved'); setTimeout(()=>el.classList.remove('cell-saved'), 900); }
+// Usa essa em vez de flashSaved() pra botões que já têm uma cor própria com
+// significado (status, prioridade, etc.) — flashSaved() anima o "background"
+// até ficar transparente, o que fazia a cor real sumir e voltar (bug).
+function flashSavedCor(el){ el.classList.add('cell-saved-cor'); setTimeout(()=>el.classList.remove('cell-saved-cor'), 700); }
 
 // Confirmação dentro do app (substitui o confirm() nativo do navegador).
 // Uso: if (!(await confirmarAcao('Excluir este item?'))) return;
@@ -673,12 +679,14 @@ function buildNav(){
 function setActiveTab(key){ document.querySelectorAll('.tab-btn[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view === key)); }
 
 let currentSilentRefresh = null;
+let __viewToken = 0;
 async function navigateTo(key, opts){
   const silencioso = !!(opts && opts.silencioso);
   if (silencioso && key === currentView && currentSilentRefresh){
     await currentSilentRefresh();
     return;
   }
+  const meuToken = ++__viewToken;
   currentSilentRefresh = null;
   currentView = key;
   setActiveTab(key);
@@ -695,8 +703,11 @@ async function navigateTo(key, opts){
     else if (key==='auditoria') await viewAuditoria();
   }catch(err){
     console.error(err);
-    root.innerHTML = `<div class="section-note" style="border-color:var(--accent);color:var(--accent)">Erro ao carregar: ${err.message}</div>`;
+    if (meuToken === __viewToken){
+      root.innerHTML = `<div class="section-note" style="border-color:var(--accent);color:var(--accent)">Erro ao carregar: ${err.message}</div>`;
+    }
   }
+  if (meuToken !== __viewToken) return; // uma navegação mais nova já rolou nesse meio-tempo — não mexe mais na tela
   root.classList.remove('view-anim');
   void root.offsetWidth; // força reflow pra reiniciar a animação a cada troca de aba
   root.classList.add('view-anim');
@@ -762,7 +773,7 @@ function renderSelectCell(table, row, field){
     validar: (field.key==='status' && (table==='projetos'||table==='chamados_sac')) ? validarStatusConclusao(table, row.id) : undefined,
     onSelect: async (v, btn)=>{
       const ok = await saveField(table, row.id, field.key, v);
-      if (ok) flashSaved(btn);
+      if (ok) flashSavedCor(btn);
     },
   });
 }
@@ -1412,7 +1423,7 @@ async function viewMinhasTarefas(){
         validar: validarStatusConclusao('projetos', r.id),
         onSelect: async (v, btn)=>{
           const ok = await saveField('projetos', r.id, 'status', v);
-          if (ok){ flashSaved(btn); toast('Status atualizado.'); }
+          if (ok){ flashSavedCor(btn); toast('Status atualizado.'); }
         },
       });
       tr.querySelector('[data-cell="prioridade"]').innerHTML = r.prioridade
@@ -1610,41 +1621,10 @@ async function viewOpcoesMenu(){
 
   const root = document.getElementById('view-root');
   root.innerHTML = `
-    ${currentProfile.role==='admin' ? `
-    <div class="chart-card" style="margin-bottom:18px;">
-      <div class="chart-title">Ajuste de cor no modo escuro</div>
-      <div class="section-note" style="margin-bottom:12px;">A cor que você define em cada opção abaixo vale pro modo claro. No modo escuro, o app escurece (ou clareia) e ajusta a saturação automaticamente com base nestes dois números — não precisa cadastrar uma segunda cor.</div>
-      <div style="display:flex;gap:24px;flex-wrap:wrap;">
-        <div class="field" style="margin-bottom:0;"><label>Reduzir luminosidade (%)</label>
-          <input type="number" id="cfg-luminosidade" class="cell-input" value="${configVisual.reduzir_luminosidade_pct}" step="1" style="width:100px;" />
-          <div class="section-note" style="margin:6px 0 0;padding:6px 10px;">Positivo = mais escuro no modo escuro. Negativo = mais claro.</div>
-        </div>
-        <div class="field" style="margin-bottom:0;"><label>Ajustar saturação (%)</label>
-          <input type="number" id="cfg-saturacao" class="cell-input" value="${configVisual.ajustar_saturacao_pct}" step="1" style="width:100px;" />
-          <div class="section-note" style="margin:6px 0 0;padding:6px 10px;">Positivo = mais saturado (vívido). Negativo = mais dessaturado (acinzentado).</div>
-        </div>
-        <div style="display:flex;align-items:flex-end;">
-          <button class="btn btn-primary" id="btn-salvar-config-visual" style="width:auto;">Salvar</button>
-        </div>
-      </div>
-    </div>` : ''}
-    ${(currentProfile.role==='admin'||currentProfile.role==='gestor') ? `
-    <div class="chart-card" style="margin-bottom:18px;">
-      <div class="chart-title">Modelos de checklist (por Categoria/Motivo)</div>
-      <div class="section-note">Monte um checklist padrão pra cada Categoria (Projetos) ou Motivo (SAC). Ele aparece como sugestão pra aplicar na tela de detalhes de itens novos daquele tipo.</div>
-      <div class="toolbar" style="margin-bottom:14px;">
-        <select id="tpl-tabela">
-          <option value="projetos">Projetos — por Categoria</option>
-          <option value="chamados_sac">SAC — por Motivo</option>
-        </select>
-        <select id="tpl-tipo"></select>
-      </div>
-      <div id="tpl-grupos"></div>
-      <div style="display:flex;gap:8px;margin-top:10px;">
-        <input type="text" class="cell-input" id="tpl-novo-grupo-nome" placeholder="Nome do novo checklist..." style="width:220px;" />
-        <button class="btn btn-primary" id="tpl-btn-add-grupo" style="width:auto;">+ Novo checklist</button>
-      </div>
-    </div>` : ''}
+    <div class="toolbar">
+      ${currentProfile.role==='admin' ? `<button class="btn" id="btn-abrir-config-visual" type="button">🎨 Ajuste de cor no modo escuro</button>` : ''}
+      ${(currentProfile.role==='admin'||currentProfile.role==='gestor') ? `<button class="btn" id="btn-abrir-modelos-checklist" type="button">📋 Modelos de checklist</button>` : ''}
+    </div>
     <div class="toolbar">
       <select id="grupo-filter">${GRUPOS_MENU.map(([g,l])=>`<option value="${g}">${l}</option>`).join('')}</select>
       <div class="spacer"></div>
@@ -1657,133 +1637,10 @@ async function viewOpcoesMenu(){
   `;
 
   if (currentProfile.role==='admin'){
-    document.getElementById('btn-salvar-config-visual').addEventListener('click', async ()=>{
-      const luminosidade = parseFloat(document.getElementById('cfg-luminosidade').value) || 0;
-      const saturacao = parseFloat(document.getElementById('cfg-saturacao').value) || 0;
-      const { error } = await sb.from('config_visual').update({ reduzir_luminosidade_pct: luminosidade, ajustar_saturacao_pct: saturacao }).eq('id', 1);
-      if (error) return toast('Erro ao salvar: '+error.message, true);
-      configVisual = { reduzir_luminosidade_pct: luminosidade, ajustar_saturacao_pct: saturacao };
-      toast('Configuração salva.');
-      if (temaEscuro()) navigateTo(currentView);
-    });
+    document.getElementById('btn-abrir-config-visual').addEventListener('click', abrirConfigVisualPopup);
   }
-
   if (currentProfile.role==='admin'||currentProfile.role==='gestor'){
-    const TPL_TIPO_GRUPO = { projetos: 'projetos_categoria', chamados_sac: 'chamados_motivo' };
-    const tplTabelaSel = document.getElementById('tpl-tabela');
-    const tplTipoSel = document.getElementById('tpl-tipo');
-    let tplGrupos = [], tplItens = [];
-
-    function popularTiposTemplate(){
-      const opcoes = opcoesDe(TPL_TIPO_GRUPO[tplTabelaSel.value]);
-      tplTipoSel.innerHTML = opcoes.length
-        ? opcoes.map(o=>`<option value="${escapeHtml(o.valor)}">${escapeHtml(o.valor)}</option>`).join('')
-        : '<option value="">(nenhuma opção cadastrada nesse grupo)</option>';
-    }
-
-    function tplItensDoGrupo(gid){ return tplItens.filter(i=>i.template_grupo_id===gid); }
-    function montarTplItensHtml(itens){
-      if (!itens.length) return '<div class="section-note" style="margin:8px 0 0;">Nenhum item ainda.</div>';
-      return itens.map(it=>`<div class="checklist-item" data-id="${it.id}"><span class="arraste-handle" title="Arraste pra reordenar">⠿</span><span>${escapeHtml(it.texto)}</span><button type="button" class="icon-btn" data-tpl-del-item="${it.id}" style="margin-left:auto;">excluir</button></div>`).join('');
-    }
-    function montarTplGrupoHtml(g){
-      return `<div class="checklist-grupo" data-tpl-grupo="${g.id}">
-        <div class="checklist-grupo-head">
-          <input type="text" class="cell-input tpl-grupo-nome" value="${escapeHtml(g.nome)}" style="font-weight:800;font-size:13.5px;max-width:220px;" />
-          <button type="button" class="icon-btn" data-tpl-del-grupo="${g.id}" style="margin-left:auto;">excluir checklist</button>
-        </div>
-        <div class="checklist-itens">${montarTplItensHtml(tplItensDoGrupo(g.id))}</div>
-        <div style="display:flex;gap:8px;margin-top:8px;">
-          <input type="text" class="cell-input" data-tpl-novo-item="${g.id}" placeholder="Novo item..." style="flex:1;" />
-          <button type="button" class="btn" data-tpl-add-item="${g.id}" style="width:auto;">+ Item</button>
-        </div>
-      </div>`;
-    }
-    function ligarTplItem(itemEl){
-      itemEl.querySelector('[data-tpl-del-item]').addEventListener('click', async ()=>{
-        if (!(await confirmarAcao('Excluir este item do modelo?'))) return;
-        const itemId = itemEl.dataset.id;
-        const { error } = await sb.from('templates_checklist_itens').delete().eq('id', itemId);
-        if (error) return toast('Erro: '+error.message, true);
-        tplItens = tplItens.filter(i=>i.id!==itemId);
-        itemEl.remove();
-      });
-      ligarArrasteItem(itemEl);
-    }
-    // Liga UM grupo de template só (evita o mesmo bug de duplicação do
-    // checklist real: nunca religamos um grupo já ligado).
-    function ligarUmTplGrupo(grupoEl){
-      const gid = grupoEl.dataset.tplGrupo;
-      grupoEl.querySelectorAll('.checklist-item').forEach(ligarTplItem);
-      ligarArrasteContainer(grupoEl.querySelector('.checklist-itens'), '.checklist-item', (ids)=>persistirOrdem('templates_checklist_itens', ids));
-      const nomeInput = grupoEl.querySelector('.tpl-grupo-nome');
-      nomeInput.addEventListener('blur', async ()=>{
-        const novoNome = nomeInput.value.trim() || 'Checklist';
-        const { error } = await sb.from('templates_checklist_grupos').update({ nome: novoNome }).eq('id', gid);
-        if (error) return toast('Erro: '+error.message, true);
-        flashSaved(nomeInput);
-      });
-      grupoEl.querySelector('[data-tpl-del-grupo]').addEventListener('click', async ()=>{
-        if (!(await confirmarAcao('Excluir este checklist do modelo (e todos os itens dele)?'))) return;
-        const { error } = await sb.from('templates_checklist_grupos').delete().eq('id', gid);
-        if (error) return toast('Erro: '+error.message, true);
-        tplGrupos = tplGrupos.filter(g=>g.id!==gid);
-        grupoEl.remove();
-      });
-      const inpNovo = grupoEl.querySelector(`[data-tpl-novo-item="${gid}"]`);
-      const btnAdd = grupoEl.querySelector(`[data-tpl-add-item="${gid}"]`);
-      btnAdd.addEventListener('click', async ()=>{
-        const texto = inpNovo.value.trim();
-        if (!texto) return;
-        const { data: novo, error } = await sb.from('templates_checklist_itens').insert({ template_grupo_id: gid, texto, ordem: tplItensDoGrupo(gid).length }).select().single();
-        if (error) return toast('Erro: '+error.message, true);
-        inpNovo.value = '';
-        tplItens.push(novo);
-        const itensDiv = grupoEl.querySelector('.checklist-itens');
-        if (itensDiv.querySelector('.section-note')) itensDiv.innerHTML = '';
-        itensDiv.insertAdjacentHTML('beforeend', montarTplItensHtml([novo]));
-        ligarTplItem(itensDiv.querySelector(`.checklist-item[data-id="${novo.id}"]`));
-      });
-      inpNovo.addEventListener('keydown', (e)=>{ if (e.key==='Enter') btnAdd.click(); });
-    }
-
-    async function carregarTemplates(){
-      const tabela = tplTabelaSel.value, tipoValor = tplTipoSel.value;
-      const container = document.getElementById('tpl-grupos');
-      if (!tipoValor){ container.innerHTML = '<div class="section-note">Cadastre uma opção nesse grupo primeiro (na tabela abaixo).</div>'; tplGrupos=[]; tplItens=[]; return; }
-      const { data: grupos } = await sb.from('templates_checklist_grupos').select('*').eq('tabela', tabela).eq('tipo_valor', tipoValor).order('ordem');
-      tplGrupos = grupos || [];
-      const idsGrupos = tplGrupos.map(g=>g.id);
-      tplItens = [];
-      if (idsGrupos.length){
-        const { data: itens } = await sb.from('templates_checklist_itens').select('*').in('template_grupo_id', idsGrupos).order('ordem');
-        tplItens = itens || [];
-      }
-      container.innerHTML = tplGrupos.length ? tplGrupos.map(montarTplGrupoHtml).join('') : '<div class="section-note">Nenhum checklist neste modelo ainda.</div>';
-      document.querySelectorAll('[data-tpl-grupo]').forEach(ligarUmTplGrupo);
-    }
-
-    popularTiposTemplate();
-    tplTabelaSel.addEventListener('change', ()=>{ popularTiposTemplate(); carregarTemplates(); });
-    tplTipoSel.addEventListener('change', carregarTemplates);
-
-    document.getElementById('tpl-btn-add-grupo').addEventListener('click', async ()=>{
-      const tabela = tplTabelaSel.value, tipoValor = tplTipoSel.value;
-      if (!tipoValor) return toast('Cadastre uma opção nesse grupo primeiro.', true);
-      const inp = document.getElementById('tpl-novo-grupo-nome');
-      const nome = inp.value.trim() || 'Checklist';
-      const { data: novo, error } = await sb.from('templates_checklist_grupos').insert({ tabela, tipo_valor: tipoValor, nome, ordem: tplGrupos.length }).select().single();
-      if (error) return toast('Erro: '+error.message, true);
-      inp.value = '';
-      tplGrupos.push(novo);
-      const container = document.getElementById('tpl-grupos');
-      if (container.querySelector('.section-note')) container.innerHTML = '';
-      container.insertAdjacentHTML('beforeend', montarTplGrupoHtml(novo));
-      ligarUmTplGrupo(document.querySelector(`[data-tpl-grupo="${novo.id}"]`));
-    });
-    document.getElementById('tpl-novo-grupo-nome').addEventListener('keydown', (e)=>{ if (e.key==='Enter') document.getElementById('tpl-btn-add-grupo').click(); });
-
-    carregarTemplates();
+    document.getElementById('btn-abrir-modelos-checklist').addEventListener('click', abrirModelosChecklistPopup);
   }
 
   function render(grupo){
@@ -1805,6 +1662,7 @@ async function viewOpcoesMenu(){
 
     tbody.querySelectorAll('tr').forEach(tr=>{
       const id = tr.dataset.id;
+      const linha = data.find(o=>o.id===id);
       tr.querySelectorAll('[data-f]').forEach(inp=>{
         const evt = inp.type==='checkbox' ? 'change' : (inp.type==='color' || inp.type==='number' ? 'change' : 'blur');
         inp.addEventListener(evt, async ()=>{
@@ -1816,6 +1674,7 @@ async function viewOpcoesMenu(){
           }
           const { error } = await sb.from('menu_opcoes').update({ [f]: v }).eq('id', id);
           if (error) return toast('Erro: '+error.message, true);
+          if (linha) linha[f] = v; // atualiza a lista local, não só o cache global
           flashSaved(inp);
           await loadMenuOpcoes();
         });
@@ -1835,6 +1694,7 @@ async function viewOpcoesMenu(){
           tr.querySelector('.cor-swatch').value = v;
           const { error } = await sb.from('menu_opcoes').update({ cor: v }).eq('id', id);
           if (error) return toast('Erro: '+error.message, true);
+          if (linha) linha.cor = v;
           flashSaved(hexInput);
           await loadMenuOpcoes();
         });
@@ -1844,8 +1704,11 @@ async function viewOpcoesMenu(){
         if (!(await confirmarAcao('Excluir esta opção? Registros que já usam esse valor mantêm o texto, só some do menu suspenso.'))) return;
         const { error } = await sb.from('menu_opcoes').delete().eq('id', id);
         if (error) return toast('Erro: '+error.message, true);
+        const idx = data.findIndex(o=>o.id===id);
+        if (idx>=0) data.splice(idx,1);
+        await loadMenuOpcoes();
         toast('Opção excluída.');
-        navigateTo('opcoes-menu');
+        render(grupoFilter.value);
       });
     });
   }
@@ -1856,15 +1719,201 @@ async function viewOpcoesMenu(){
 
   document.getElementById('btn-new-opcao').addEventListener('click', async ()=>{
     const grupo = grupoFilter.value;
-    const { error } = await sb.from('menu_opcoes').insert({ grupo, valor:'Nova opção', cor:'#628852', ordem: 99 });
+    const { data: nova, error } = await sb.from('menu_opcoes').insert({ grupo, valor:'Nova opção', cor:'#628852', ordem: 99 }).select().single();
     if (error) return toast('Erro: '+error.message, true);
+    data.push(nova);
     await loadMenuOpcoes();
     toast('Opção criada — edite o texto e a cor.');
-    navigateTo('opcoes-menu');
+    render(grupoFilter.value);
+  });
+
+  // Atualização silenciosa: refaz a busca e redesenha mantendo o grupo que
+  // você estava vendo (antes isso recarregava a tela inteira do zero).
+  currentSilentRefresh = async ()=>{
+    const { data: novosDados, error: err2 } = await sb.from('menu_opcoes').select('*').order('grupo').order('ordem');
+    if (err2) return;
+    data.length = 0; data.push(...novosDados);
+    render(grupoFilter.value);
+  };
+}
+
+function abrirConfigVisualPopup(){
+  const modal = document.getElementById('modal-content');
+  modal.classList.remove('modal-wide');
+  modal.innerHTML = `
+    <h3>Ajuste de cor no modo escuro</h3>
+    <div class="section-note" style="margin-bottom:16px;">A cor que você define em cada opção vale pro modo claro. No modo escuro, o app escurece (ou clareia) e ajusta a saturação automaticamente com base nestes dois números — não precisa cadastrar uma segunda cor.</div>
+    <div class="field"><label>Reduzir luminosidade (%)</label>
+      <input type="number" id="cfg-luminosidade" class="cell-input" value="${configVisual.reduzir_luminosidade_pct}" step="1" style="width:100%;" />
+      <div class="section-note" style="margin:6px 0 0;padding:6px 10px;">Positivo = mais escuro no modo escuro. Negativo = mais claro.</div>
+    </div>
+    <div class="field"><label>Ajustar saturação (%)</label>
+      <input type="number" id="cfg-saturacao" class="cell-input" value="${configVisual.ajustar_saturacao_pct}" step="1" style="width:100%;" />
+      <div class="section-note" style="margin:6px 0 0;padding:6px 10px;">Positivo = mais saturado (vívido). Negativo = mais dessaturado (acinzentado).</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+      <button class="btn btn-primary" id="btn-salvar-config-visual" style="width:auto;">Salvar</button>
+    </div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('active');
+  document.getElementById('btn-salvar-config-visual').addEventListener('click', async ()=>{
+    const luminosidade = parseFloat(document.getElementById('cfg-luminosidade').value) || 0;
+    const saturacao = parseFloat(document.getElementById('cfg-saturacao').value) || 0;
+    const { error } = await sb.from('config_visual').update({ reduzir_luminosidade_pct: luminosidade, ajustar_saturacao_pct: saturacao }).eq('id', 1);
+    if (error) return toast('Erro ao salvar: '+error.message, true);
+    configVisual = { reduzir_luminosidade_pct: luminosidade, ajustar_saturacao_pct: saturacao };
+    toast('Configuração salva.');
+    closeModal();
+    if (temaEscuro()) navigateTo(currentView);
   });
 }
 
+function abrirModelosChecklistPopup(){
+  const modal = document.getElementById('modal-content');
+  modal.classList.add('modal-wide');
+  modal.innerHTML = `
+    <div class="modal-fixed-head">
+      <h3 style="margin-bottom:4px;">Modelos de checklist</h3>
+      <div style="font-size:12.5px;color:var(--text-dim);">Monte um checklist padrão pra cada Categoria (Projetos) ou Motivo (SAC). Ele aparece como sugestão pra aplicar na tela de detalhes de itens novos daquele tipo.</div>
+    </div>
+    <div class="modal-scroll-body">
+      <div class="toolbar" style="margin-bottom:14px;">
+        <select id="tpl-tabela">
+          <option value="projetos">Projetos — por Categoria</option>
+          <option value="chamados_sac">SAC — por Motivo</option>
+        </select>
+        <select id="tpl-tipo"></select>
+      </div>
+      <div id="tpl-grupos"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <input type="text" class="cell-input" id="tpl-novo-grupo-nome" placeholder="Nome do novo checklist..." style="flex:1;" />
+        <button class="btn btn-primary" id="tpl-btn-add-grupo" style="width:auto;">+ Novo checklist</button>
+      </div>
+    </div>
+    <div class="modal-fixed-foot"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>
+  `;
+  document.getElementById('modal-backdrop').classList.add('active');
+
+  const TPL_TIPO_GRUPO = { projetos: 'projetos_categoria', chamados_sac: 'chamados_motivo' };
+  const tplTabelaSel = document.getElementById('tpl-tabela');
+  const tplTipoSel = document.getElementById('tpl-tipo');
+  let tplGrupos = [], tplItens = [];
+
+  function popularTiposTemplate(){
+    const opcoes = opcoesDe(TPL_TIPO_GRUPO[tplTabelaSel.value]);
+    tplTipoSel.innerHTML = opcoes.length
+      ? opcoes.map(o=>`<option value="${escapeHtml(o.valor)}">${escapeHtml(o.valor)}</option>`).join('')
+      : '<option value="">(nenhuma opção cadastrada nesse grupo)</option>';
+  }
+
+  function tplItensDoGrupo(gid){ return tplItens.filter(i=>i.template_grupo_id===gid); }
+  function montarTplItensHtml(itens){
+    if (!itens.length) return '<div class="section-note" style="margin:8px 0 0;">Nenhum item ainda.</div>';
+    return itens.map(it=>`<div class="checklist-item" data-id="${it.id}"><span class="arraste-handle" title="Arraste pra reordenar">⠿</span><span>${escapeHtml(it.texto)}</span><button type="button" class="icon-btn" data-tpl-del-item="${it.id}" style="margin-left:auto;">excluir</button></div>`).join('');
+  }
+  function montarTplGrupoHtml(g){
+    return `<div class="checklist-grupo" data-tpl-grupo="${g.id}">
+      <div class="checklist-grupo-head">
+        <input type="text" class="cell-input tpl-grupo-nome" value="${escapeHtml(g.nome)}" style="font-weight:800;font-size:13.5px;max-width:220px;" />
+        <button type="button" class="icon-btn" data-tpl-del-grupo="${g.id}" style="margin-left:auto;">excluir checklist</button>
+      </div>
+      <div class="checklist-itens">${montarTplItensHtml(tplItensDoGrupo(g.id))}</div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="text" class="cell-input" data-tpl-novo-item="${g.id}" placeholder="Novo item..." style="flex:1;" />
+        <button type="button" class="btn" data-tpl-add-item="${g.id}" style="width:auto;">+ Item</button>
+      </div>
+    </div>`;
+  }
+  function ligarTplItem(itemEl){
+    itemEl.querySelector('[data-tpl-del-item]').addEventListener('click', async ()=>{
+      if (!(await confirmarAcao('Excluir este item do modelo?'))) return;
+      const itemId = itemEl.dataset.id;
+      const { error } = await sb.from('templates_checklist_itens').delete().eq('id', itemId);
+      if (error) return toast('Erro: '+error.message, true);
+      tplItens = tplItens.filter(i=>i.id!==itemId);
+      itemEl.remove();
+    });
+    ligarArrasteItem(itemEl);
+  }
+  // Liga UM grupo de template só (evita o mesmo bug de duplicação do
+  // checklist real: nunca religamos um grupo já ligado).
+  function ligarUmTplGrupo(grupoEl){
+    const gid = grupoEl.dataset.tplGrupo;
+    grupoEl.querySelectorAll('.checklist-item').forEach(ligarTplItem);
+    ligarArrasteContainer(grupoEl.querySelector('.checklist-itens'), '.checklist-item', (ids)=>persistirOrdem('templates_checklist_itens', ids));
+    const nomeInput = grupoEl.querySelector('.tpl-grupo-nome');
+    nomeInput.addEventListener('blur', async ()=>{
+      const novoNome = nomeInput.value.trim() || 'Checklist';
+      const { error } = await sb.from('templates_checklist_grupos').update({ nome: novoNome }).eq('id', gid);
+      if (error) return toast('Erro: '+error.message, true);
+      flashSaved(nomeInput);
+    });
+    grupoEl.querySelector('[data-tpl-del-grupo]').addEventListener('click', async ()=>{
+      if (!(await confirmarAcao('Excluir este checklist do modelo (e todos os itens dele)?'))) return;
+      const { error } = await sb.from('templates_checklist_grupos').delete().eq('id', gid);
+      if (error) return toast('Erro: '+error.message, true);
+      tplGrupos = tplGrupos.filter(g=>g.id!==gid);
+      grupoEl.remove();
+    });
+    const inpNovo = grupoEl.querySelector(`[data-tpl-novo-item="${gid}"]`);
+    const btnAdd = grupoEl.querySelector(`[data-tpl-add-item="${gid}"]`);
+    btnAdd.addEventListener('click', async ()=>{
+      const texto = inpNovo.value.trim();
+      if (!texto) return;
+      const { data: novo, error } = await sb.from('templates_checklist_itens').insert({ template_grupo_id: gid, texto, ordem: tplItensDoGrupo(gid).length }).select().single();
+      if (error) return toast('Erro: '+error.message, true);
+      inpNovo.value = '';
+      tplItens.push(novo);
+      const itensDiv = grupoEl.querySelector('.checklist-itens');
+      if (itensDiv.querySelector('.section-note')) itensDiv.innerHTML = '';
+      itensDiv.insertAdjacentHTML('beforeend', montarTplItensHtml([novo]));
+      ligarTplItem(itensDiv.querySelector(`.checklist-item[data-id="${novo.id}"]`));
+    });
+    inpNovo.addEventListener('keydown', (e)=>{ if (e.key==='Enter') btnAdd.click(); });
+  }
+
+  async function carregarTemplates(){
+    const tabela = tplTabelaSel.value, tipoValor = tplTipoSel.value;
+    const container = document.getElementById('tpl-grupos');
+    if (!tipoValor){ container.innerHTML = '<div class="section-note">Cadastre uma opção nesse grupo primeiro (em "Opções dos Menus").</div>'; tplGrupos=[]; tplItens=[]; return; }
+    const { data: grupos } = await sb.from('templates_checklist_grupos').select('*').eq('tabela', tabela).eq('tipo_valor', tipoValor).order('ordem');
+    tplGrupos = grupos || [];
+    const idsGrupos = tplGrupos.map(g=>g.id);
+    tplItens = [];
+    if (idsGrupos.length){
+      const { data: itens } = await sb.from('templates_checklist_itens').select('*').in('template_grupo_id', idsGrupos).order('ordem');
+      tplItens = itens || [];
+    }
+    container.innerHTML = tplGrupos.length ? tplGrupos.map(montarTplGrupoHtml).join('') : '<div class="section-note">Nenhum checklist neste modelo ainda.</div>';
+    document.querySelectorAll('[data-tpl-grupo]').forEach(ligarUmTplGrupo);
+  }
+
+  popularTiposTemplate();
+  tplTabelaSel.addEventListener('change', ()=>{ popularTiposTemplate(); carregarTemplates(); });
+  tplTipoSel.addEventListener('change', carregarTemplates);
+
+  document.getElementById('tpl-btn-add-grupo').addEventListener('click', async ()=>{
+    const tabela = tplTabelaSel.value, tipoValor = tplTipoSel.value;
+    if (!tipoValor) return toast('Cadastre uma opção nesse grupo primeiro.', true);
+    const inp = document.getElementById('tpl-novo-grupo-nome');
+    const nome = inp.value.trim() || 'Checklist';
+    const { data: novo, error } = await sb.from('templates_checklist_grupos').insert({ tabela, tipo_valor: tipoValor, nome, ordem: tplGrupos.length }).select().single();
+    if (error) return toast('Erro: '+error.message, true);
+    inp.value = '';
+    tplGrupos.push(novo);
+    const container = document.getElementById('tpl-grupos');
+    if (container.querySelector('.section-note')) container.innerHTML = '';
+    container.insertAdjacentHTML('beforeend', montarTplGrupoHtml(novo));
+    ligarUmTplGrupo(document.querySelector(`[data-tpl-grupo="${novo.id}"]`));
+  });
+  document.getElementById('tpl-novo-grupo-nome').addEventListener('keydown', (e)=>{ if (e.key==='Enter') document.getElementById('tpl-btn-add-grupo').click(); });
+
+  carregarTemplates();
+}
+
 async function viewUsuarios(){
+  const meuTokenDaTela = __viewToken;
   document.getElementById('page-title').textContent = 'Usuários';
   document.getElementById('page-sub').textContent = 'Crie contas, altere papéis e defina tokens — tudo direto no seu banco, sem serviços externos.';
   const { data, error } = await sb.rpc('listar_usuarios');
@@ -1933,12 +1982,13 @@ async function viewUsuarios(){
     toast('Usuário criado.'); navigateTo('usuarios');
   });
 
-  await montarPainelPermissoes();
+  await montarPainelPermissoes(meuTokenDaTela);
 }
 
-async function montarPainelPermissoes(){
+async function montarPainelPermissoes(meuTokenDaTela){
   const { data: permData, error: permErr } = await sb.from('permissoes_abas').select('*');
   if (permErr){ console.error(permErr); return; }
+  if (meuTokenDaTela !== __viewToken) return; // a pessoa já saiu dessa tela antes disso terminar de carregar
   const atual = {}; // atual[role][aba] = true/false
   PAPEIS.forEach(r=>{ atual[r] = {}; ABAS_DISPONIVEIS.forEach(([key])=>{ atual[r][key] = (NAV_ITEMS_PADRAO[r]||[]).includes(key); }); });
   (permData||[]).forEach(row=>{ if (atual[row.role]) atual[row.role][row.aba] = !!row.permitido; });
@@ -1979,18 +2029,59 @@ async function montarPainelPermissoes(){
   });
 }
 
+const CAMPOS_AUDITORIA = [
+  {key:'created_at', label:'Quando'},
+  {key:'user_nome', label:'Usuário'},
+  {key:'tabela', label:'Tabela'},
+  {key:'acao', label:'Ação'},
+];
+
 async function viewAuditoria(){
   document.getElementById('page-title').textContent = 'Log de Auditoria';
   document.getElementById('page-sub').textContent = 'Histórico de todas as alterações feitas por cada usuário.';
   const { data, error } = await sb.from('audit_log').select('*').order('created_at',{ascending:false}).limit(300);
   if (error) throw error;
 
+  const chaveEstado = `tabela_estado_auditoria_${currentUser.id}`;
+  const state = { busca:'', colFiltros:{}, sortRules:[] };
+  function salvarEstado(){
+    const colFiltrosSerializado = {};
+    Object.entries(state.colFiltros).forEach(([k,set])=>{ colFiltrosSerializado[k] = Array.from(set); });
+    localStorage.setItem(chaveEstado, JSON.stringify({ busca: state.busca, colFiltros: colFiltrosSerializado, sortRules: state.sortRules }));
+  }
+  function carregarEstado(){
+    try{
+      const raw = localStorage.getItem(chaveEstado);
+      if (!raw) return;
+      const obj = JSON.parse(raw);
+      state.busca = obj.busca || '';
+      state.sortRules = obj.sortRules || [];
+      state.colFiltros = {};
+      Object.entries(obj.colFiltros || {}).forEach(([k,arr])=>{ state.colFiltros[k] = new Set(arr); });
+    }catch(e){}
+  }
+  carregarEstado();
+
+  function valorExibivel(r, campo){
+    if (campo.key==='created_at') return r.created_at;
+    if (campo.key==='user_nome') return r.user_nome || r.user_email || '—';
+    return r[campo.key] ?? '';
+  }
+
   const root = document.getElementById('view-root');
-  root.innerHTML = `<div class="toolbar"><input type="text" id="filter-audit" placeholder="Filtrar por usuário, tabela, ação..." style="min-width:280px" /></div>
+  root.innerHTML = `
+    <div class="toolbar">
+      <input type="text" id="filter-audit" placeholder="Buscar em tudo..." style="min-width:280px" />
+      <button class="btn" id="btn-limpar-filtros" type="button">Limpar filtros e ordenação</button>
+    </div>
     <div class="table-wrap"><table>
-      <thead><tr><th>Quando</th><th>Usuário</th><th>Tabela</th><th>Ação</th><th>Alteração</th></tr></thead>
+      <thead><tr>${CAMPOS_AUDITORIA.map(c=>`<th><div class="th-inner">
+        <button type="button" class="th-sort" data-key="${c.key}">${c.label}<span class="sort-arrow" data-arrow="${c.key}"></span></button>
+        <button type="button" class="th-filtro" data-key="${c.key}" title="Filtrar esta coluna">▾</button>
+      </div></th>`).join('')}<th>Alteração</th></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>`;
+
   function render(rows){
     const tbody = document.getElementById('tbody');
     if (!rows.length){ tbody.innerHTML = `<tr class="empty-row"><td colspan="5">Nenhum registro de auditoria.</td></tr>`; return; }
@@ -2005,11 +2096,136 @@ async function viewAuditoria(){
       </tr>`;
     }).join('');
   }
-  render(data);
-  document.getElementById('filter-audit').addEventListener('input', (e)=>{
-    const q = e.target.value.toLowerCase();
-    render(data.filter(r=>JSON.stringify(r).toLowerCase().includes(q)));
+
+  function atualizarIndicadoresOrdenacao(){
+    document.querySelectorAll('.sort-arrow').forEach(a=>a.textContent='');
+    state.sortRules.forEach((rule, i)=>{
+      const arrow = document.querySelector(`.sort-arrow[data-arrow="${rule.key}"]`);
+      if (arrow) arrow.textContent = ` ${rule.dir===1?'▲':'▼'}${state.sortRules.length>1 ? (i+1) : ''}`;
+    });
+  }
+  function atualizarIndicadoresFiltro(){
+    document.querySelectorAll('.th-filtro').forEach(btn=>{
+      btn.classList.toggle('ativo', !!state.colFiltros[btn.dataset.key]);
+    });
+  }
+  function aplicarFiltrosOrdenacao(){
+    let rows = data.slice();
+    if (state.busca){
+      rows = rows.filter(r => JSON.stringify(r).toLowerCase().includes(state.busca));
+    }
+    Object.entries(state.colFiltros).forEach(([key, valoresPermitidos])=>{
+      const campo = CAMPOS_AUDITORIA.find(x=>x.key===key);
+      rows = rows.filter(r => valoresPermitidos.has(String(valorExibivel(r, campo))));
+    });
+    if (state.sortRules.length){
+      const regras = state.sortRules.map(rule => ({ campo: CAMPOS_AUDITORIA.find(x=>x.key===rule.key), dir: rule.dir }));
+      rows.sort((a,b)=>{
+        for (const { campo, dir } of regras){
+          let va = valorExibivel(a, campo), vb = valorExibivel(b, campo);
+          if (typeof va === 'number' || typeof vb === 'number'){ va = Number(va)||0; vb = Number(vb)||0; }
+          else { va = String(va).toLowerCase(); vb = String(vb).toLowerCase(); }
+          if (va < vb) return -1*dir;
+          if (va > vb) return 1*dir;
+        }
+        return 0;
+      });
+    }
+    render(rows);
+  }
+
+  aplicarFiltrosOrdenacao();
+  atualizarIndicadoresOrdenacao();
+  atualizarIndicadoresFiltro();
+
+  const filterEl = document.getElementById('filter-audit');
+  filterEl.value = state.busca;
+  filterEl.addEventListener('input', (e)=>{
+    state.busca = e.target.value.toLowerCase();
+    salvarEstado();
+    aplicarFiltrosOrdenacao();
   });
+  document.getElementById('btn-limpar-filtros').addEventListener('click', ()=>{
+    state.busca=''; state.colFiltros={}; state.sortRules=[];
+    filterEl.value='';
+    localStorage.removeItem(chaveEstado);
+    atualizarIndicadoresOrdenacao(); atualizarIndicadoresFiltro(); aplicarFiltrosOrdenacao();
+    toast('Filtros e ordenação removidos.');
+  });
+  document.querySelectorAll('.th-sort').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      const key = btn.dataset.key;
+      const existente = state.sortRules.find(r=>r.key===key);
+      if (e.shiftKey){
+        if (existente) existente.dir *= -1;
+        else state.sortRules.push({ key, dir:1 });
+      } else {
+        if (state.sortRules.length===1 && existente) existente.dir *= -1;
+        else state.sortRules = [{ key, dir:1 }];
+      }
+      atualizarIndicadoresOrdenacao();
+      salvarEstado();
+      aplicarFiltrosOrdenacao();
+    });
+  });
+  document.querySelectorAll('.th-filtro').forEach(btn=>{
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      const key = btn.dataset.key;
+      const campo = CAMPOS_AUDITORIA.find(x=>x.key===key);
+      const valoresDisponiveis = Array.from(new Set(data.map(r=>String(valorExibivel(r, campo))))).sort();
+      abrirFlutuante(btn, 'msel-panel-float', (painel)=>{
+        const marcados = state.colFiltros[key] || new Set(valoresDisponiveis);
+        function montarLista(filtroTexto){
+          const itens = valoresDisponiveis.filter(v=>!filtroTexto || v.toLowerCase().includes(filtroTexto));
+          return itens.map(v=>{
+            const rotulo = campo.key==='created_at' ? (v ? new Date(v).toLocaleString('pt-BR') : '(vazio)') : (v || '(vazio)');
+            return `<label><input type="checkbox" value="${escapeHtml(v)}" ${marcados.has(v)?'checked':''}> ${escapeHtml(rotulo)}</label>`;
+          }).join('') || '<div style="padding:6px;color:var(--text-faint);font-size:12px;">Nenhum valor encontrado.</div>';
+        }
+        painel.innerHTML = `
+          <input type="text" class="cell-input" id="busca-valores" placeholder="Buscar valor…" style="width:100%;margin-bottom:6px;font-size:12px;padding:5px 7px;" />
+          <div style="display:flex;gap:10px;margin-bottom:6px;">
+            <button type="button" class="link-btn" data-acao="todos">Marcar todos</button>
+            <button type="button" class="link-btn" data-acao="nenhum">Desmarcar todos</button>
+          </div>
+          <div class="filtro-lista">${montarLista('')}</div>
+        `;
+        function religarCheckboxes(){
+          painel.querySelectorAll('.filtro-lista input[type=checkbox]').forEach(cb=>{
+            cb.addEventListener('change', ()=>{
+              if (!state.colFiltros[key]) state.colFiltros[key] = new Set(valoresDisponiveis);
+              if (cb.checked) state.colFiltros[key].add(cb.value); else state.colFiltros[key].delete(cb.value);
+              if (state.colFiltros[key].size === valoresDisponiveis.length) delete state.colFiltros[key];
+              atualizarIndicadoresFiltro(); salvarEstado(); aplicarFiltrosOrdenacao();
+            });
+          });
+        }
+        religarCheckboxes();
+        painel.querySelector('[data-acao="todos"]').addEventListener('click', ()=>{
+          delete state.colFiltros[key];
+          painel.querySelectorAll('.filtro-lista input[type=checkbox]').forEach(cb=>cb.checked=true);
+          atualizarIndicadoresFiltro(); salvarEstado(); aplicarFiltrosOrdenacao();
+        });
+        painel.querySelector('[data-acao="nenhum"]').addEventListener('click', ()=>{
+          state.colFiltros[key] = new Set();
+          painel.querySelectorAll('.filtro-lista input[type=checkbox]').forEach(cb=>cb.checked=false);
+          atualizarIndicadoresFiltro(); salvarEstado(); aplicarFiltrosOrdenacao();
+        });
+        painel.querySelector('#busca-valores').addEventListener('input', (e)=>{
+          painel.querySelector('.filtro-lista').innerHTML = montarLista(e.target.value.toLowerCase());
+          religarCheckboxes();
+        });
+      });
+    });
+  });
+
+  currentSilentRefresh = async ()=>{
+    const { data: novosDados, error: err2 } = await sb.from('audit_log').select('*').order('created_at',{ascending:false}).limit(300);
+    if (err2) return;
+    data.length = 0; data.push(...novosDados);
+    aplicarFiltrosOrdenacao();
+  };
 }
 window.showDiff = function(rowJson){
   const r = JSON.parse(rowJson);
@@ -2440,6 +2656,23 @@ function graficoPorLojaEMes(titulo, lista, campoData, campoAgrupador, mesesAno, 
   return `<div class="chart-card"><div class="chart-title">${titulo}</div>${svgGroupedBarChart(labels, series, cores)}</div>`;
 }
 
+// Igual ao de cima, mas quebrado por DIA em vez de mês — usado no modo Mês
+// do dashboard (SAC).
+function graficoPorLojaEDia(titulo, lista, campoData, campoAgrupador, dias, grupoMenu){
+  const grupos = Array.from(new Set(lista.map(r=>r[campoAgrupador] || '(sem loja)'))).sort();
+  if (!grupos.length) return `<div class="chart-card"><div class="chart-title">${titulo}</div><div class="section-note">Sem dados nesse mês.</div></div>`;
+  const series = grupos.map(g=>({
+    nome: g,
+    valores: dias.map(dia=>lista.filter(r=>(r[campoAgrupador]||'(sem loja)')===g && String(r[campoData]||'').slice(0,10)===dia).length),
+  }));
+  const labels = dias.map(dia=>String(Number(dia.slice(-2))));
+  const cores = grupos.map((g,i)=>{
+    const opcao = opcoesDe(grupoMenu).find(o=>o.valor===g);
+    return opcao ? corMenuParaTema(opcao.cor) : corSerie(i);
+  });
+  return `<div class="chart-card"><div class="chart-title">${titulo}</div>${svgGroupedBarChart(labels, series, cores)}</div>`;
+}
+
 const TIPOS_META = {
   sac_chamados: 'Nº de chamados no mês (meta)',
   sac_nps: 'NPS médio no mês (meta)',
@@ -2456,7 +2689,7 @@ async function viewDashboard(){
 
   const [chamadosRes, projetosRes, vendasRes, metasRes] = await Promise.all([
     sb.from('chamados_sac').select('mes_ref, data_abertura, nota_nps, tempo_resolucao_dias, status, franquia'),
-    sb.from('projetos').select('mes_ref, percentual_conclusao, status'),
+    sb.from('projetos').select('mes_ref, percentual_conclusao, status, data_conclusao_real'),
     sb.from('vendas_expansao').select('mes_ref, data_venda, loja, metragem_m2'),
     sb.from('metas').select('*'),
   ]);
@@ -2479,6 +2712,12 @@ async function viewDashboard(){
   if (!anosList.includes(anoAtual)) anosList.push(anoAtual);
 
   function mesesDoAno(ano){ return Array.from({length:12}, (_,i)=>`${ano}-${String(i+1).padStart(2,'0')}`); }
+  function diasDoMes(mesKey){
+    const [ano, mes] = mesKey.split('-').map(Number);
+    const totalDias = new Date(ano, mes, 0).getDate();
+    return Array.from({length:totalDias}, (_,i)=>`${mesKey}-${String(i+1).padStart(2,'0')}`);
+  }
+  function rotuloDia(diaISO){ return String(Number(diaISO.slice(-2))); }
 
   function metaDe(tipo, mk){
     const row = metas.find(m=>m.tipo===tipo && m.mes_ref && m.mes_ref.slice(0,7)===mk);
@@ -2583,15 +2822,24 @@ async function viewDashboard(){
     const tempoVals = chamadosPeriodo.map(r=>r.tempo_resolucao_dias).filter(v=>v!=null);
     const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
     const metaChamados = metaAtual('sac_chamados', periodo), metaNps = metaAtual('sac_nps', periodo);
-    const porMes = mesesParaGrafico(periodo).map(k=>[rotuloMes(k, periodo), chamados.filter(r=>monthKey(r.mes_ref||r.data_abertura)===k).length]);
+    let graficosSac;
+    if (periodo.tipo === 'ano'){
+      const porMes = mesesParaGrafico(periodo).map(k=>[rotuloMes(k, periodo), chamados.filter(r=>monthKey(r.mes_ref||r.data_abertura)===k).length]);
+      graficosSac = `<div class="chart-card"><div class="chart-title">Nº de chamados por mês</div><div>${svgBarChart(porMes, 'var(--accent-2)')}</div></div>
+        ${graficoPorLojaEMes('Nº de chamados por mês por loja', chamadosPeriodo, 'data_abertura', 'franquia', mesesParaGrafico(periodo), 'chamados_franquia')}`;
+    } else {
+      const dias = diasDoMes(periodo.valor);
+      const porDia = dias.map(d=>[rotuloDia(d), chamados.filter(r=>String(r.data_abertura||'').slice(0,10)===d).length]);
+      graficosSac = `<div class="chart-card"><div class="chart-title">Nº de chamados por dia</div><div>${svgBarChart(porDia, 'var(--accent-2)')}</div></div>
+        ${graficoPorLojaEDia('Nº de chamados por dia por loja', chamadosPeriodo, 'data_abertura', 'franquia', dias, 'chamados_franquia')}`;
+    }
     document.getElementById('dash-painel-sac').innerHTML = `
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">Nº Chamados ${periodo.tipo==='mes'?'no mês':'no ano'}</div><div class="kpi-value">${chamadosPeriodo.length}</div>${barraMeta(chamadosPeriodo.length, metaChamados, periodo)}${metaEditorHtml('sac_chamados', periodo)}</div>
         <div class="kpi-card"><div class="kpi-label">NPS médio</div><div class="kpi-value">${avg(npsVals)!=null ? avg(npsVals).toFixed(1) : '—'}</div>${barraMeta(avg(npsVals)||0, metaNps, periodo)}${metaEditorHtml('sac_nps', periodo)}</div>
         <div class="kpi-card"><div class="kpi-label">Tempo médio resolução</div><div class="kpi-value">${avg(tempoVals)!=null ? avg(tempoVals).toFixed(1) : '—'} <span class="unit">dias</span></div></div>
       </div>
-      <div class="chart-card"><div class="chart-title">Nº de chamados por mês</div><div>${svgBarChart(porMes, 'var(--accent-2)')}</div></div>
-      ${periodo.tipo==='ano' ? graficoPorLojaEMes('Nº de chamados por mês por loja', chamadosPeriodo, 'data_abertura', 'franquia', mesesParaGrafico(periodo), 'chamados_franquia') : ''}
+      ${graficosSac}
     `;
     document.querySelectorAll('#dash-painel-sac .meta-input').forEach(bindMetaInput);
     document.querySelectorAll('#dash-painel-sac .meta-mes-select').forEach(bindMetaMesSelect);
@@ -2638,22 +2886,30 @@ async function viewDashboard(){
     const concluidosPeriodo = projetosPeriodo.filter(r=>r.status==='Concluído').length;
     const avg = arr => arr.length ? (arr.reduce((a,b)=>a+b,0)/arr.length) : null;
     const metaConcluidos = metaAtual('projetos_concluidos', periodo);
-    const porMesConcluidos = mesesParaGrafico(periodo).map(k=>{
-      const qtd = projetos.filter(r=>monthKey(r.mes_ref)===k && r.status==='Concluído').length;
-      return [rotuloMes(k, periodo), qtd];
-    });
-    const porMesPct = mesesParaGrafico(periodo).map(k=>{
-      const vals = projetos.filter(r=>monthKey(r.mes_ref)===k).map(r=>r.percentual_conclusao).filter(v=>v!=null);
-      const a = vals.length ? Math.round((vals.reduce((x,y)=>x+y,0)/vals.length)*100) : 0;
-      return [rotuloMes(k, periodo), a];
-    });
+    let graficosProjetos;
+    if (periodo.tipo === 'ano'){
+      const porMesConcluidos = mesesParaGrafico(periodo).map(k=>{
+        const qtd = projetos.filter(r=>monthKey(r.mes_ref)===k && r.status==='Concluído').length;
+        return [rotuloMes(k, periodo), qtd];
+      });
+      const porMesPct = mesesParaGrafico(periodo).map(k=>{
+        const vals = projetos.filter(r=>monthKey(r.mes_ref)===k).map(r=>r.percentual_conclusao).filter(v=>v!=null);
+        const a = vals.length ? Math.round((vals.reduce((x,y)=>x+y,0)/vals.length)*100) : 0;
+        return [rotuloMes(k, periodo), a];
+      });
+      graficosProjetos = `<div class="chart-card"><div class="chart-title">Projetos concluídos por mês</div><div>${svgBarChart(porMesConcluidos, 'var(--c-moss)')}</div></div>
+        <div class="chart-card"><div class="chart-title">% de conclusão média por mês</div><div>${svgBarChart(porMesPct, 'var(--accent-2)')}</div></div>`;
+    } else {
+      const dias = diasDoMes(periodo.valor);
+      const porDiaConcluidos = dias.map(d=>[rotuloDia(d), projetos.filter(r=>r.status==='Concluído' && String(r.data_conclusao_real||'').slice(0,10)===d).length]);
+      graficosProjetos = `<div class="chart-card"><div class="chart-title">Projetos concluídos por dia</div><div>${svgBarChart(porDiaConcluidos, 'var(--c-moss)')}</div></div>`;
+    }
     document.getElementById('dash-painel-projetos').innerHTML = `
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">Concluídos ${periodo.tipo==='mes'?'no mês':'no ano'}</div><div class="kpi-value">${concluidosPeriodo}</div>${barraMeta(concluidosPeriodo, metaConcluidos, periodo)}${metaEditorHtml('projetos_concluidos', periodo)}</div>
         <div class="kpi-card"><div class="kpi-label">% conclusão média</div><div class="kpi-value">${avg(pctVals)!=null ? Math.round(avg(pctVals)*100)+'%' : '—'}</div></div>
       </div>
-      <div class="chart-card"><div class="chart-title">Projetos concluídos por mês</div><div>${svgBarChart(porMesConcluidos, 'var(--c-moss)')}</div></div>
-      <div class="chart-card"><div class="chart-title">% de conclusão média por mês</div><div>${svgBarChart(porMesPct, 'var(--accent-2)')}</div></div>
+      ${graficosProjetos}
     `;
     document.querySelectorAll('#dash-painel-projetos .meta-input').forEach(bindMetaInput);
     document.querySelectorAll('#dash-painel-projetos .meta-mes-select').forEach(bindMetaMesSelect);
@@ -2685,14 +2941,15 @@ async function viewDashboard(){
     });
   }
 
-  // SAC e Projetos só têm visão anual (não têm mais seletor de mês próprio).
-  // Vendas mantém Mês/Ano. O ano escolhido no seletor é compartilhado por
-  // todos os painéis; o mês (quando Vendas está em modo Mês) é só dela.
+  // Cada aba (SAC, Vendas, Projetos) lembra sozinha se está em modo Mês ou
+  // Ano. O mês/ano escolhidos no seletor são compartilhados entre as abas
+  // que estiverem naquele modo.
+  let mesSelecionado = thisMonthKey;
   let anoSelecionado = anoAtual;
-  let periodoVendas = { tipo:'mes', valor: thisMonthKey };
+  let periodoTipoPorAba = { sac:'mes', vendas:'mes', projetos:'mes' };
+  let abaAtiva = 'sac';
   function periodoPara(aba){
-    if (aba === 'vendas') return periodoVendas.tipo==='ano' ? { tipo:'ano', valor: anoSelecionado } : periodoVendas;
-    return { tipo:'ano', valor: anoSelecionado };
+    return periodoTipoPorAba[aba]==='ano' ? { tipo:'ano', valor: anoSelecionado } : { tipo:'mes', valor: mesSelecionado };
   }
   function renderTudo(){
     renderSac(periodoPara('sac'));
@@ -2702,7 +2959,7 @@ async function viewDashboard(){
   renderTudo();
 
   document.getElementById('mes-select').addEventListener('change', (e)=>{
-    periodoVendas = { tipo:'mes', valor: e.target.value };
+    mesSelecionado = e.target.value;
     renderTudo();
   });
   document.getElementById('ano-select').addEventListener('change', (e)=>{
@@ -2710,12 +2967,20 @@ async function viewDashboard(){
     renderTudo();
   });
 
+  function atualizarControlesPeriodo(){
+    const mostrarToggle = abaAtiva !== 'anual';
+    document.getElementById('periodo-toggle').style.display = mostrarToggle ? '' : 'none';
+    const tipoAtivo = periodoTipoPorAba[abaAtiva] || 'mes';
+    document.querySelectorAll('#periodo-toggle .dash-subtab').forEach(b=>b.classList.toggle('active', b.dataset.periodo===tipoAtivo));
+    document.getElementById('mes-select').style.display = (mostrarToggle && tipoAtivo==='mes') ? '' : 'none';
+    document.getElementById('ano-select').style.display = mostrarToggle ? '' : 'none';
+  }
+  atualizarControlesPeriodo();
+
   document.querySelectorAll('#periodo-toggle .dash-subtab').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('#periodo-toggle .dash-subtab').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
-      periodoVendas.tipo = btn.dataset.periodo;
-      document.getElementById('mes-select').style.display = periodoVendas.tipo==='mes' ? '' : 'none';
+      periodoTipoPorAba[abaAtiva] = btn.dataset.periodo;
+      atualizarControlesPeriodo();
       renderTudo();
       if (currentSilentRefresh) currentSilentRefresh();
     });
@@ -2725,13 +2990,11 @@ async function viewDashboard(){
     btn.addEventListener('click', ()=>{
       document.querySelectorAll('#dash-subtabs .dash-subtab').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
-      const aba = btn.dataset.tab;
+      abaAtiva = btn.dataset.tab;
       ['sac','vendas','projetos','anual'].forEach(t=>{
-        document.getElementById('dash-painel-'+t).style.display = (t===aba) ? '' : 'none';
+        document.getElementById('dash-painel-'+t).style.display = (t===abaAtiva) ? '' : 'none';
       });
-      // Mês/Ano só faz sentido pra Vendas — as outras abas são só anuais.
-      document.getElementById('periodo-toggle').style.display = aba==='vendas' ? '' : 'none';
-      document.getElementById('mes-select').style.display = (aba==='vendas' && periodoVendas.tipo==='mes') ? '' : 'none';
+      atualizarControlesPeriodo();
       if (currentSilentRefresh) currentSilentRefresh();
     });
   });
@@ -2741,7 +3004,7 @@ async function viewDashboard(){
   currentSilentRefresh = async ()=>{
     const [novoChamados, novoProjetos, novoVendas, novasMetas] = await Promise.all([
       sb.from('chamados_sac').select('mes_ref, data_abertura, nota_nps, tempo_resolucao_dias, status, franquia'),
-      sb.from('projetos').select('mes_ref, percentual_conclusao, status'),
+      sb.from('projetos').select('mes_ref, percentual_conclusao, status, data_conclusao_real'),
       sb.from('vendas_expansao').select('mes_ref, data_venda, loja, metragem_m2'),
       sb.from('metas').select('*'),
     ]);
