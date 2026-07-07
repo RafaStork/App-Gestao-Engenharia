@@ -98,7 +98,7 @@ main{ height:100vh; overflow:hidden; display:flex; flex-direction:column; paddin
 .page-sub{color:var(--text-dim); font-size:12.5px; margin-top:2px;}
 .user-chip{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:6px 6px 6px 14px; font-size:12.5px; font-weight:600; }
 #view-root{ flex:1; min-height:0; overflow-y:auto; padding-bottom:30px; display:flex; flex-direction:column; }
-#view-root > .table-wrap:last-child{ flex:1; min-height:200px; max-height:none; }
+#view-root > .table-wrap.tabela-principal{ flex:1; min-height:200px; max-height:none; }
 
 .hamburger-btn{ display:none; background:var(--surface); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:9px; font-size:16px; flex-shrink:0; }
 .hamburger-btn:hover{ border-color:var(--accent); color:var(--accent); }
@@ -118,7 +118,7 @@ main{ height:100vh; overflow:hidden; display:flex; flex-direction:column; paddin
 .toolbar select, .toolbar input{ background:var(--surface); border:1px solid var(--border); color:var(--text); padding:8px 10px; font-size:13px; border-radius:8px; }
 .spacer{flex:1;}
 
-.table-wrap{border:1px solid var(--border); background:var(--surface); border-radius:12px; overflow:auto; box-shadow:var(--shadow); max-height:74vh;}
+.table-wrap{border:1px solid var(--border); background:var(--surface); border-radius:12px; overflow:auto; box-shadow:var(--shadow); max-height:74vh; flex-shrink:0;}
 table{width:100%; border-collapse:separate; border-spacing:0; font-size:13px;}
 thead th{ text-align:left; padding:12px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; color:var(--text); border-bottom:none; box-shadow:inset 0 -2px 0 var(--accent); white-space:nowrap; background:var(--surface-2); position:sticky; top:0; z-index:5; }
 .th-inner{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
@@ -679,6 +679,11 @@ function buildNav(){
 function setActiveTab(key){ document.querySelectorAll('.tab-btn[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view === key)); }
 
 let currentSilentRefresh = null;
+// Preenchida por viewTabela() com a função aplicarFiltrosOrdenacao() daquela
+// tela — assim, qualquer edição de campo (select, data, percentual, texto...)
+// consegue reordenar/refiltrar a linha na hora, sem precisar recarregar a
+// tela inteira. Fica null quando a tela atual não é uma tabela editável.
+let aplicarFiltrosAtual = null;
 let __viewToken = 0;
 async function navigateTo(key, opts){
   const silencioso = !!(opts && opts.silencioso);
@@ -688,6 +693,7 @@ async function navigateTo(key, opts){
   }
   const meuToken = ++__viewToken;
   currentSilentRefresh = null;
+  aplicarFiltrosAtual = null;
   currentView = key;
   setActiveTab(key);
   const root = document.getElementById('view-root');
@@ -773,19 +779,28 @@ function renderSelectCell(table, row, field){
     validar: (field.key==='status' && (table==='projetos'||table==='chamados_sac')) ? validarStatusConclusao(table, row.id) : undefined,
     onSelect: async (v, btn)=>{
       const ok = await saveField(table, row.id, field.key, v);
-      if (ok) flashSavedCor(btn);
+      if (ok){
+        row[field.key] = v;
+        flashSavedCor(btn);
+        if (typeof aplicarFiltrosAtual === 'function') aplicarFiltrosAtual();
+      }
     },
   });
 }
 
-function registerAutoSave(id, table, rowId, key, transform, evt){
+function registerAutoSave(id, table, row, key, transform, evt){
   queueMicrotask(()=>{
     const el = document.getElementById(id);
     if (!el) return;
     const eventName = evt || (el.tagName==='INPUT' && el.type!=='text' ? 'change' : 'blur');
     el.addEventListener(eventName, async ()=>{
-      const ok = await saveField(table, rowId, key, transform(el.value));
-      if (ok) flashSaved(el);
+      const novoValor = transform(el.value);
+      const ok = await saveField(table, row.id, key, novoValor);
+      if (ok){
+        row[key] = novoValor;
+        flashSaved(el);
+        if (typeof aplicarFiltrosAtual === 'function') aplicarFiltrosAtual();
+      }
     });
   });
   return '';
@@ -925,31 +940,50 @@ function renderCell(table, row, field){
   if (field.edit==='multiselect') return renderMultiSelectCell(table, row, field);
   if (field.edit==='percent'){
     const pct = Math.round((row[field.key]||0)*100);
+    const barId = id+'_bar';
     const out = `<div style="display:flex;align-items:center;gap:8px;">
       <input type="number" class="cell-number" id="${id}" value="${pct}" min="0" max="100" step="5" style="width:64px" />
       <span style="font-size:11px;color:var(--text-faint)">%</span>
-      <div class="progress-bar" style="flex:1"><div style="width:${pct}%"></div></div>
+      <div class="progress-bar" style="flex:1"><div id="${barId}" style="width:${pct}%"></div></div>
     </div>`;
-    registerAutoSave(id, table, row.id, field.key, v=>parseFloat(v)/100);
+    queueMicrotask(()=>{
+      const inp = document.getElementById(id);
+      const bar = document.getElementById(barId);
+      if (!inp || !bar) return;
+      // Atualiza a barrinha na hora (com a animação já definida no CSS),
+      // sem esperar salvar no banco — só pra dar retorno visual imediato.
+      inp.addEventListener('input', ()=>{
+        let v = parseFloat(inp.value);
+        if (isNaN(v)) v = 0;
+        v = Math.max(0, Math.min(100, v));
+        bar.style.width = v + '%';
+      });
+    });
+    registerAutoSave(id, table, row, field.key, v=>parseFloat(v)/100);
     return out;
   }
   if (field.edit==='date'){
     return buildCalendarField(row[field.key], async (novoValor)=>{
-      return await saveField(table, row.id, field.key, novoValor);
+      const ok = await saveField(table, row.id, field.key, novoValor);
+      if (ok){
+        row[field.key] = novoValor;
+        if (typeof aplicarFiltrosAtual === 'function') aplicarFiltrosAtual();
+      }
+      return ok;
     });
   }
   if (field.edit==='number'){
     const out = `<input type="number" class="cell-number" id="${id}" ${w} value="${row[field.key] ?? ''}" ${field.min!==undefined?`min="${field.min}"`:''} ${field.max!==undefined?`max="${field.max}"`:''} ${field.step!==undefined?`step="${field.step}"`:''} />`;
-    registerAutoSave(id, table, row.id, field.key, v=>v===''?null:parseFloat(v));
+    registerAutoSave(id, table, row, field.key, v=>v===''?null:parseFloat(v));
     return out;
   }
   if (field.edit==='textarea'){
     const out = `<textarea class="cell-input" id="${id}" ${w} rows="1">${escapeHtml(row[field.key]||'')}</textarea>`;
-    registerAutoSave(id, table, row.id, field.key, v=>v||null, 'blur');
+    registerAutoSave(id, table, row, field.key, v=>v||null, 'blur');
     return out;
   }
   const out = `<input type="text" class="cell-input" id="${id}" ${w} value="${escapeHtml(row[field.key]||'')}" />`;
-  registerAutoSave(id, table, row.id, field.key, v=>v||null, 'blur');
+  registerAutoSave(id, table, row, field.key, v=>v||null, 'blur');
   return out;
 }
 
@@ -1103,7 +1137,7 @@ async function viewTabela(tableName){
       ${canWrite ? `<button class="btn btn-primary" id="btn-new" style="width:auto">+ Novo</button>` : ''}
     </div>
     <div class="section-note" style="margin-bottom:10px;">Clique no nome de uma coluna pra ordenar. Segure <b>Shift</b> pra ordenar por várias colunas ao mesmo tempo (a ordem do clique define a prioridade). Clique no ▾ pra filtrar valores específicos daquela coluna. Suas escolhas ficam salvas até você mesmo limpar.</div>
-    <div class="table-wrap"><table>
+    <div class="table-wrap tabela-principal"><table>
       <thead>
         <tr>${cfg.detalhavel?'<th></th>':''}${cfg.fields.map(f=>`<th><div class="th-inner">
           <button type="button" class="th-sort" data-key="${f.key}">${f.label}<span class="sort-arrow" data-arrow="${f.key}"></span></button>
@@ -1205,6 +1239,7 @@ async function viewTabela(tableName){
     }).join('');
   }
 
+  aplicarFiltrosAtual = aplicarFiltrosOrdenacao;
   aplicarFiltrosOrdenacao();
   atualizarIndicadoresOrdenacao();
   atualizarIndicadoresFiltro();
@@ -1309,24 +1344,41 @@ async function viewTabela(tableName){
         if (f.edit==='text' && !f.readonly) defaults[f.key]='Novo — clique para editar';
       });
       if (tableName==='vendas_expansao') defaults.criado_por = currentUser.id;
-      // Gera o id no navegador em vez de pedir pro banco "devolver" a linha
-      // recém-criada: pra papel "usuario", a política de leitura só libera
-      // depois que ele vira responsável (próximo passo), então pedir a
-      // linha de volta na mesma hora do INSERT falharia por RLS.
       let novoId = null;
+      let novaLinha = null;
       if (tableName==='chamados_sac'){
+        // Gera o id no navegador em vez de pedir pro banco "devolver" a linha
+        // recém-criada: pra papel "usuario", a política de leitura só libera
+        // depois que ele vira responsável (próximo passo), então pedir a
+        // linha de volta na mesma hora do INSERT falharia por RLS.
         novoId = crypto.randomUUID();
         defaults.id = novoId;
-      }
-      const { error } = await sb.from(tableName).insert(defaults);
-      if (error) return toast('Erro ao criar: '+error.message, true);
-      if (tableName==='chamados_sac'){
+        const { error } = await sb.from(tableName).insert(defaults);
+        if (error) return toast('Erro ao criar: '+error.message, true);
         // Quem cria já entra como responsável, senão não conseguiria ver o
         // que acabou de criar (regra de RLS pra papel "usuario").
         await sb.from('chamados_sac_responsaveis').insert({ chamado_id: novoId, profile_id: currentUser.id });
+        const { data: linhaCriada, error: errBusca } = await sb.from(tableName).select('*').eq('id', novoId).single();
+        if (!errBusca) novaLinha = linhaCriada;
+      } else {
+        // Pede a linha de volta já com os valores calculados pelo banco
+        // (número sequencial, timestamps, etc.) num único round-trip.
+        const { data: linhaCriada, error } = await sb.from(tableName).insert(defaults).select().single();
+        if (error) return toast('Erro ao criar: '+error.message, true);
+        novaLinha = linhaCriada;
       }
-      toast('Registro criado — edite os campos na linha.');
-      navigateTo(currentView);
+      if (novaLinha){
+        // Insere só na tela atual (sem recarregar tudo) e já reordena/filtra
+        // igual às demais linhas — é por isso que ela "se ajusta sozinha"
+        // conforme você for preenchendo os campos.
+        novaLinha.__resp_ids = tableName==='chamados_sac' ? [currentUser.id] : [];
+        data.unshift(novaLinha);
+        aplicarFiltrosOrdenacao();
+        toast('Registro criado — preencha os campos na linha; ela se ajusta sozinha pela ordenação e pelos filtros.');
+      } else {
+        toast('Registro criado — edite os campos na linha.');
+        navigateTo(currentView);
+      }
     });
   }
 
@@ -1566,7 +1618,7 @@ async function viewMinhasTarefas(){
       <button class="btn" id="btn-limpar-filtros" type="button">Limpar filtros e ordenação</button>
     </div>
     <div class="section-note" style="margin-bottom:10px;">Clique no nome de uma coluna pra ordenar. Segure <b>Shift</b> pra ordenar por várias colunas ao mesmo tempo. Clique no ▾ pra filtrar valores específicos daquela coluna — suas escolhas ficam salvas até você limpar.</div>
-    <div class="table-wrap"><table>
+    <div class="table-wrap tabela-principal"><table>
       <thead id="thead-mt">${montarCabecalho()}</thead>
       <tbody id="tbody"></tbody>
     </table></div>
@@ -1918,6 +1970,7 @@ async function viewUsuarios(){
   document.getElementById('page-sub').textContent = 'Crie contas, altere papéis e defina tokens — tudo direto no seu banco, sem serviços externos.';
   const { data, error } = await sb.rpc('listar_usuarios');
   if (error) throw error;
+  if (meuTokenDaTela !== __viewToken) return; // uma navegação mais nova já rolou nesse meio-tempo — não sobrescreve a tela atual
 
   const root = document.getElementById('view-root');
   root.innerHTML = `
@@ -1982,7 +2035,11 @@ async function viewUsuarios(){
     toast('Usuário criado.'); navigateTo('usuarios');
   });
 
-  await montarPainelPermissoes(meuTokenDaTela);
+  try{
+    await montarPainelPermissoes(meuTokenDaTela);
+  }catch(err){
+    console.error('Erro ao montar painel de permissões:', err);
+  }
 }
 
 async function montarPainelPermissoes(meuTokenDaTela){
@@ -2074,7 +2131,7 @@ async function viewAuditoria(){
       <input type="text" id="filter-audit" placeholder="Buscar em tudo..." style="min-width:280px" />
       <button class="btn" id="btn-limpar-filtros" type="button">Limpar filtros e ordenação</button>
     </div>
-    <div class="table-wrap"><table>
+    <div class="table-wrap tabela-principal"><table>
       <thead><tr>${CAMPOS_AUDITORIA.map(c=>`<th><div class="th-inner">
         <button type="button" class="th-sort" data-key="${c.key}">${c.label}<span class="sort-arrow" data-arrow="${c.key}"></span></button>
         <button type="button" class="th-filtro" data-key="${c.key}" title="Filtrar esta coluna">▾</button>
