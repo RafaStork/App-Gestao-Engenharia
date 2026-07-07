@@ -703,7 +703,7 @@ const TABLE_CONFIG = {
   vendas_expansao: {
     title: 'Vendas / Expansão', sub: 'Vendas de franquias e metragem.',
     fields: [
-      {key:'numero_venda', label:'Nº Venda', edit:'number', w:70},
+      {key:'numero_venda', label:'Nº Venda', edit:'text', w:70, readonly:true},
       {key:'data_venda', label:'Data', edit:'date'},
       {key:'loja', label:'Loja', edit:'select', group:'vendas_loja'},
       {key:'metragem_m2', label:'Metragem (m²)', edit:'number', step:0.01},
@@ -1132,7 +1132,8 @@ async function viewTabela(tableName){
     if (!rows.length){ tbody.innerHTML = `<tr class="empty-row"><td colspan="${cfg.fields.length+1+(cfg.detalhavel?1:0)}">Nenhum registro encontrado.</td></tr>`; return; }
     tbody.innerHTML = rows.map(r=>{
       const cells = cfg.fields.map(f=>{
-        const editavel = canWrite && !f.readonly;
+        const editavel = canWrite && !f.readonly
+          && !(tableName==='vendas_expansao' && currentProfile.role==='usuario' && r.criado_por!==currentUser.id);
         const content = editavel ? renderCell(tableName, r, f)
           : (f.edit==='select' ? statusBadgeGeneric(f.group, f.boolMap ? (r[f.key]?'Sim':'Nao') : r[f.key])
              : f.edit==='multiselect' ? (profilesCache.filter(p=>(r.__resp_ids||[]).includes(p.id)).map(p=>p.nome).join(', ') || '—')
@@ -1142,8 +1143,11 @@ async function viewTabela(tableName){
         return `<td${cls}>${content}</td>`;
       }).join('');
       const detalhesCell = cfg.detalhavel ? `<td class="row-actions"><button class="icon-btn" onclick="abrirDetalhes('${tableName}','${r.id}')">detalhes</button></td>` : '';
-      const podeExcluir = currentProfile.role === 'admin' || currentProfile.role === 'gestor'
-        || (currentProfile.role === 'usuario' && tableName === 'chamados_sac');
+      let podeExcluir = currentProfile.role === 'admin' || currentProfile.role === 'gestor';
+      if (!podeExcluir && currentProfile.role === 'usuario'){
+        if (tableName === 'chamados_sac') podeExcluir = true; // já só vê os seus, por RLS
+        if (tableName === 'vendas_expansao') podeExcluir = (r.criado_por === currentUser.id); // agora vê de todo mundo, só apaga a própria
+      }
       const actions = canWrite ? `<td class="row-actions">${podeExcluir ? `<button class="icon-btn" onclick="deleteRow('${tableName}','${r.id}')">excluir</button>` : ''}</td>` : '';
       return `<tr>${detalhesCell}${cells}${actions}</tr>`;
     }).join('');
