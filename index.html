@@ -101,8 +101,8 @@ input,select,textarea{font-family:var(--font);}
 .btn{ border:1px solid var(--border); background:var(--surface); color:var(--text-dim); padding:9px 15px; font-size:12.5px; font-weight:700; border-radius:var(--r); transition:background .18s var(--ease-out), color .18s var(--ease-out), border-color .18s var(--ease-out), box-shadow .22s var(--ease-out), transform .14s var(--ease-spring); }
 .btn:hover{border-color:var(--text-faint); color:var(--text); box-shadow:var(--shadow-sm); transform:translateY(-1px);}
 .btn:active{transform:translateY(0) scale(.97); box-shadow:none; transition-duration:.06s;}
-.btn-primary{ background:var(--c-ink); border-color:var(--c-ink); color:#fff; width:100%; padding:12.5px 16px; font-weight:700; letter-spacing:.01em; font-size:13.5px; border-radius:10px; transition:filter .18s var(--ease-out), box-shadow .22s var(--ease-out), transform .14s var(--ease-spring); box-shadow:var(--shadow-sm); }
-[data-theme="dark"] .btn-primary{ background:var(--accent); border-color:var(--accent); }
+.btn-primary{ background:linear-gradient(135deg, #2b2f37, var(--c-ink)); border-color:var(--c-ink); color:#fff; width:100%; padding:12.5px 16px; font-weight:700; letter-spacing:.01em; font-size:13.5px; border-radius:10px; transition:filter .18s var(--ease-out), box-shadow .22s var(--ease-out), transform .14s var(--ease-spring); box-shadow:var(--shadow-sm); }
+[data-theme="dark"] .btn-primary{ background:linear-gradient(135deg, var(--accent), var(--accent-3)); border-color:var(--accent); }
 .btn-primary:hover{filter:brightness(1.12); box-shadow:var(--shadow); transform:translateY(-1px);}
 .btn-primary:active{transform:translateY(0) scale(.98); box-shadow:var(--shadow-sm); transition-duration:.06s;}
 .btn-primary:disabled{opacity:.5; cursor:not-allowed; transform:none; filter:none;}
@@ -125,7 +125,7 @@ nav.tabs{display:flex; flex-direction:column; gap:2px; padding:0 10px;}
 .tab-btn:hover{color:var(--text); background:var(--bg-soft); padding-left:16px;}
 .tab-btn:hover::before{ height:15px; }
 .tab-btn:active{ transform:scale(.98); }
-.tab-btn.active{color:#fff; background:var(--accent); box-shadow:0 6px 16px -4px var(--accent-soft), 0 2px 6px -2px rgba(232,89,12,.35); font-weight:700; padding-left:13px;}
+.tab-btn.active{color:#fff; background:linear-gradient(135deg, var(--accent), var(--accent-3)); box-shadow:0 6px 16px -4px var(--accent-soft), 0 2px 6px -2px rgba(232,89,12,.35); font-weight:700; padding-left:13px;}
 .tab-btn.active::before{ height:0; }
 .side-footer{padding:14px 18px 16px; border-top:1px solid var(--border); margin-top:0; display:flex; flex-direction:column; gap:8px; flex-shrink:0; background:var(--surface);}
 
@@ -170,15 +170,18 @@ main{ height:100vh; overflow:hidden; display:flex; flex-direction:column; paddin
 
 .table-wrap{border:1px solid var(--border); background:var(--surface); border-radius:var(--r-lg); overflow:auto; box-shadow:var(--shadow); max-height:74vh; flex-shrink:0;}
 table{width:100%; border-collapse:separate; border-spacing:0; font-size:13px;}
-thead th{ text-align:left; padding:13px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.055em; font-weight:800; color:var(--text); border-bottom:none; box-shadow:inset 0 -2px 0 var(--accent); white-space:nowrap; background:var(--surface-2); position:sticky; top:0; z-index:5; }
+thead tr{ position:sticky; top:0; z-index:5; }
+thead th{ text-align:left; padding:13px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.055em; font-weight:800; color:var(--text); border-bottom:none; box-shadow:inset 0 -2px 0 var(--accent); white-space:nowrap; background:var(--surface-2); }
 .th-inner{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
-.th-sort{ display:inline-flex; align-items:center; gap:5px; background:none; border:none; padding:2px 2px; margin:-2px -2px; border-radius:5px; font:inherit; color:inherit; text-transform:inherit; letter-spacing:inherit; cursor:pointer; transition:color .15s var(--ease-out); }
+.th-sort{ display:inline-flex; align-items:center; gap:5px; background:none; border:none; padding:2px 2px; margin:-2px -2px; border-radius:5px; font:inherit; color:inherit; text-transform:inherit; letter-spacing:inherit; cursor:pointer; transition:color .15s var(--ease-out); outline:none; }
 .th-sort:hover{color:var(--accent);}
+.th-sort:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 .sort-arrow{color:var(--accent); font-size:10px; line-height:1;}
-.th-filtro{ background:none; border:none; color:var(--text-faint); font-size:11px; padding:3px 6px; border-radius:6px; cursor:pointer; flex-shrink:0; line-height:1; transition:background .15s var(--ease-out), color .15s var(--ease-out), transform .12s var(--ease-spring); }
+.th-filtro{ background:none; border:none; color:var(--text-faint); font-size:11px; padding:3px 6px; border-radius:6px; cursor:pointer; flex-shrink:0; line-height:1; transition:background .15s var(--ease-out), color .15s var(--ease-out), transform .12s var(--ease-spring); outline:none; }
 .th-filtro:hover{background:var(--bg-soft); color:var(--text);}
 .th-filtro:active{transform:scale(.9);}
 .th-filtro.ativo{color:#fff; background:var(--accent); box-shadow:0 2px 6px -1px var(--accent-soft);}
+.th-filtro:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 .link-btn{ background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; padding:3px 5px; cursor:pointer; border-radius:4px; }
 .link-btn:hover{text-decoration:underline; background:var(--accent-soft);}
 tbody td{ padding:7px 8px; border-bottom:1px solid var(--border-soft); white-space:nowrap; position:relative; vertical-align:middle; }
@@ -231,15 +234,15 @@ textarea.cell-input{resize:vertical; min-height:34px; font-family:var(--font);}
   100%{ box-shadow:0 0 0 0 rgba(43,138,62,0), 0 0 0 rgba(43,138,62,0); }
 }
 
-.badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 12px; font-size:11px; font-weight:700; letter-spacing:.01em; border-radius:999px; color:#fff; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.14); text-shadow:0 1px 1px rgba(0,0,0,.14); }
+.badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 12px; font-size:11px; font-weight:700; letter-spacing:.01em; border-radius:999px; color:#fff; white-space:nowrap; background-image:linear-gradient(135deg, rgba(255,255,255,.24), rgba(255,255,255,0) 55%, rgba(0,0,0,.10)); box-shadow:0 1px 2px rgba(0,0,0,.10), 0 0 10px -3px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.14); text-shadow:0 1px 1px rgba(0,0,0,.14); }
 .badge-dot{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.92); box-shadow:0 0 6px rgba(255,255,255,.5);}
 
 /* Célula com a cor da opção preenchendo tudo (não só uma tarja) */
 td.cell-colored{ padding:0; }
-td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-height:34px; padding:6px 12px; font-weight:700; font-size:12.5px; letter-spacing:.008em; white-space:nowrap; text-shadow:0 1px 1px rgba(0,0,0,.12); }
+td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-height:34px; padding:6px 12px; font-weight:700; font-size:12.5px; letter-spacing:.008em; white-space:nowrap; background-image:linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,0) 55%, rgba(0,0,0,.09)); text-shadow:0 1px 1px rgba(0,0,0,.12); }
 
 /* ── Seletor customizado (substitui <select> nativo, com animação) ──────── */
-.sel-dd-btn{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:150px; border:none; cursor:pointer; padding:6px 10px; border-radius:var(--r-sm); font-weight:700; font-size:12.5px; min-height:22px; white-space:nowrap; font-family:var(--font); text-shadow:0 1px 1px rgba(0,0,0,.12); box-shadow:inset 0 1px 0 rgba(255,255,255,.12); transition:filter .16s var(--ease-out), transform .12s var(--ease-spring); }
+.sel-dd-btn{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:150px; border:none; cursor:pointer; padding:6px 10px; border-radius:var(--r-sm); font-weight:700; font-size:12.5px; min-height:22px; white-space:nowrap; font-family:var(--font); text-shadow:0 1px 1px rgba(0,0,0,.12); background-image:linear-gradient(135deg, rgba(255,255,255,.22), rgba(255,255,255,0) 55%, rgba(0,0,0,.10)); box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 0 10px -3px rgba(0,0,0,.22); transition:filter .16s var(--ease-out), transform .12s var(--ease-spring); }
 .sel-dd-btn:hover{filter:brightness(1.06);}
 .sel-dd-btn:active{transform:scale(.985);}
 .sel-dd-btn::after{ content:"▾"; font-size:10px; opacity:.85; flex-shrink:0; transition:transform .18s var(--ease-out); }
@@ -279,7 +282,7 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .cal-day:active{transform:scale(.9);}
 .cal-day.cal-muted{color:var(--text-faint); opacity:.45;}
 .cal-day.cal-today{outline:1.5px solid var(--accent-2); outline-offset:-1.5px;}
-.cal-day.cal-selected{background:var(--accent); color:#fff; box-shadow:0 2px 8px var(--accent-soft); animation:dayPop .28s var(--ease-spring);}
+.cal-day.cal-selected{background:linear-gradient(135deg, var(--accent), var(--accent-3)); color:#fff; box-shadow:0 2px 8px var(--accent-soft); animation:dayPop .28s var(--ease-spring);}
 .cal-foot{display:flex; justify-content:space-between; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-soft);}
 .cal-foot button{ background:none; border:none; color:var(--text-dim); font-size:11.5px; font-weight:700; padding:4px 6px; border-radius:5px; }
 .cal-foot button:hover{color:var(--accent); background:var(--accent-soft);}
@@ -325,7 +328,7 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 20px; margin-bottom:20px; box-shadow:var(--shadow); }
 .chart-title{font-size:12px; font-weight:700; margin-bottom:14px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em;}
 
-.modal-backdrop{ display:flex; position:fixed; inset:0; background:rgba(15,17,20,.55); backdrop-filter:blur(2px); z-index:50; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; visibility:hidden; opacity:0; transition:opacity .18s ease, visibility 0s linear .18s; }
+.modal-backdrop{ display:flex; position:fixed; inset:0; background:rgba(15,17,20,.55); backdrop-filter:blur(2px); z-index:66; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; visibility:hidden; opacity:0; transition:opacity .18s ease, visibility 0s linear .18s; }
 .modal-backdrop.active{ visibility:visible; opacity:1; transition:opacity .18s ease; }
 .modal{ background:var(--surface); border-radius:var(--r-lg); width:100%; max-width:560px; padding:26px 28px; box-shadow:0 24px 70px rgba(0,0,0,.3); transform:scale(.955) translateY(12px); transition:transform .26s var(--ease-spring); max-height:85vh; overflow-y:auto; }
 .modal.modal-wide{ max-width:920px; width:94vw; height:88vh; max-height:88vh; padding:0; display:flex; flex-direction:column; }
@@ -370,12 +373,10 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 
 .section-note{ border:1px dashed var(--border); color:var(--text-dim); font-size:12.5px; padding:11px 14px; margin-bottom:16px; border-radius:var(--r-lg); background:var(--bg-soft); }
 
-/* Seletor de cor das opções de menu (status/prioridade etc.): troca o
-   quadradinho cru do navegador por um "botão de cor" arredondado, com leve
-   elevação, anel de foco e um pouco mais de respiro — combinando com o
-   resto dos controles do app, sem abrir mão do seletor nativo do sistema. */
+/* Seletor de cor das opções de menu (status/prioridade etc.): um "botão de
+   cor" arredondado que abre um seletor visual próprio (abaixo), em vez do
+   color-picker cru do navegador/SO. */
 .cor-swatch{
-  -webkit-appearance:none; appearance:none;
   width:40px; height:36px; flex-shrink:0; padding:0; border:none; cursor:pointer;
   border-radius:10px; overflow:hidden; background:none;
   box-shadow:0 0 0 1px var(--border), var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.14);
@@ -384,9 +385,25 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .cor-swatch:hover{ transform:translateY(-1px) scale(1.03); box-shadow:0 0 0 1px var(--text-faint), var(--shadow); }
 .cor-swatch:active{ transform:scale(.96); }
 .cor-swatch:focus-visible{ outline:none; box-shadow:0 0 0 1px var(--accent), var(--ring); }
-.cor-swatch::-webkit-color-swatch-wrapper{ padding:2px; }
-.cor-swatch::-webkit-color-swatch{ border:none; border-radius:8px; }
-.cor-swatch::-moz-color-swatch{ border:none; border-radius:8px; }
+
+/* Painel do seletor visual de cor: quadrado de saturação/valor + barra de
+   matiz + campos R/G/B — no lugar do color-picker nativo do sistema. Só
+   aplica de verdade quando "Salvar" é clicado. */
+.color-picker-float{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow-lg); padding:14px; width:216px; transform-origin:top center; animation:panelIn .2s var(--ease-out); }
+.cp-sv-square{ position:relative; width:100%; height:130px; border-radius:10px; overflow:hidden; cursor:crosshair; margin-bottom:12px; box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); touch-action:none; }
+.cp-sv-white{ position:absolute; inset:0; background:linear-gradient(to right, #fff, rgba(255,255,255,0)); }
+.cp-sv-black{ position:absolute; inset:0; background:linear-gradient(to top, #000, rgba(0,0,0,0)); }
+.cp-sv-thumb{ position:absolute; width:14px; height:14px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.3); transform:translate(-50%,-50%); pointer-events:none; }
+.cp-hue-row{ display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.cp-preview{ width:32px; height:32px; border-radius:9px; flex-shrink:0; box-shadow:0 0 0 1px var(--border), inset 0 1px 0 rgba(255,255,255,.14); }
+.cp-hue-slider{ position:relative; flex:1; height:14px; border-radius:99px; cursor:pointer; touch-action:none; background:linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00); box-shadow:inset 0 0 0 1px rgba(0,0,0,.08); }
+.cp-hue-thumb{ position:absolute; top:50%; width:16px; height:16px; border-radius:50%; border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.3); transform:translate(-50%,-50%); pointer-events:none; }
+.cp-rgb-row{ display:flex; gap:8px; margin-bottom:14px; }
+.cp-rgb-field{ flex:1; display:flex; flex-direction:column; align-items:center; gap:5px; }
+.cp-rgb-input{ width:100%; text-align:center; background:var(--bg-soft); border:1px solid var(--border-soft); color:var(--text); font-family:var(--mono); font-size:13px; padding:6px 4px; border-radius:8px; transition:border-color .16s var(--ease-out), box-shadow .16s var(--ease-out); }
+.cp-rgb-input:focus{ outline:none; border-color:var(--accent); box-shadow:var(--ring); }
+.cp-rgb-field label{ font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); font-weight:700; }
+.cp-actions{ display:flex; justify-content:flex-end; gap:8px; }
 
 #toast{ position:fixed; bottom:24px; right:24px; background:var(--c-ink); border:1px solid var(--c-ink); color:#fff; padding:13px 20px 13px 18px; font-size:13px; z-index:100; display:none; border-radius:11px; box-shadow:var(--shadow-lg); font-weight:600; max-width:340px; }
 #toast::before{ content:'✓'; display:inline-block; margin-right:8px; font-weight:800; }
@@ -810,6 +827,40 @@ function textoParaCorDeMenu(hexOriginal){
   return temaEscuro() ? '#fff' : 'var(--c-ink)';
 }
 
+// Conversões de cor usadas pelo seletor visual customizado (quadrado de
+// saturação/valor + barra de matiz + campos R/G/B), pra não depender do
+// seletor nativo do navegador/SO.
+function hexParaRgb(hex){
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex||'').trim());
+  if (!m) return { r:0, g:0, b:0 };
+  const n = parseInt(m[1], 16);
+  return { r:(n>>16)&255, g:(n>>8)&255, b:n&255 };
+}
+function rgbParaHex(r,g,b){
+  const c = (n)=> Math.max(0,Math.min(255,Math.round(n))).toString(16).padStart(2,'0');
+  return ('#'+c(r)+c(g)+c(b)).toUpperCase();
+}
+function rgbParaHsv(r,g,b){
+  r/=255; g/=255; b/=255;
+  const max = Math.max(r,g,b), min = Math.min(r,g,b), d = max-min;
+  let h = 0;
+  if (d !== 0){
+    if (max===r) h = 60*(((g-b)/d)%6);
+    else if (max===g) h = 60*((b-r)/d+2);
+    else h = 60*((r-g)/d+4);
+  }
+  if (h<0) h += 360;
+  const s = max===0 ? 0 : d/max;
+  return { h, s, v:max };
+}
+function hsvParaRgb(h,s,v){
+  const c = v*s, x = c*(1-Math.abs((h/60)%2-1)), m = v-c;
+  let r=0,g=0,b=0;
+  if (h<60){ r=c; g=x; } else if (h<120){ r=x; g=c; } else if (h<180){ g=c; b=x; }
+  else if (h<240){ g=x; b=c; } else if (h<300){ r=x; b=c; } else { r=c; b=x; }
+  return { r:(r+m)*255, g:(g+m)*255, b:(b+m)*255 };
+}
+
 async function loadProfilesCache(){
   const { data, error } = await sb.rpc('listar_usuarios');
   if (!error) profilesCache = data || [];
@@ -1049,6 +1100,114 @@ function abrirFlutuante(trigger, classe, montar){
   };
 }
 
+// Seletor de cor visual — substitui o color-picker nativo do navegador/SO
+// por um quadrado de saturação/valor + barra de matiz + campos R/G/B, no
+// mesmo estilo do resto do app. Só chama `aoSalvar(hex)` quando a pessoa
+// clica em "Salvar"; fechar ou "Cancelar" descarta a alteração.
+function abrirSeletorDeCor(trigger, corAtual, aoSalvar){
+  let { r, g, b } = hexParaRgb(corAtual || '#7f9a72');
+  let hsv = rgbParaHsv(r, g, b);
+  let h = hsv.h, s = hsv.s, v = hsv.v;
+
+  abrirFlutuante(trigger, 'color-picker-float', (painel, fechar)=>{
+    painel.innerHTML = `
+      <div class="cp-sv-square" id="cp-sv">
+        <div class="cp-sv-white"></div>
+        <div class="cp-sv-black"></div>
+        <div class="cp-sv-thumb" id="cp-sv-thumb"></div>
+      </div>
+      <div class="cp-hue-row">
+        <div class="cp-preview" id="cp-preview"></div>
+        <div class="cp-hue-slider" id="cp-hue"><div class="cp-hue-thumb" id="cp-hue-thumb"></div></div>
+      </div>
+      <div class="cp-rgb-row">
+        <div class="cp-rgb-field"><input type="text" inputmode="numeric" maxlength="3" id="cp-r" class="cp-rgb-input" /><label>R</label></div>
+        <div class="cp-rgb-field"><input type="text" inputmode="numeric" maxlength="3" id="cp-g" class="cp-rgb-input" /><label>G</label></div>
+        <div class="cp-rgb-field"><input type="text" inputmode="numeric" maxlength="3" id="cp-b" class="cp-rgb-input" /><label>B</label></div>
+      </div>
+      <div class="cp-actions">
+        <button type="button" class="btn" data-acao="cancelar">Cancelar</button>
+        <button type="button" class="btn btn-primary" data-acao="salvar" style="width:auto">Salvar</button>
+      </div>
+    `;
+    const svEl = painel.querySelector('#cp-sv');
+    const svThumb = painel.querySelector('#cp-sv-thumb');
+    const hueEl = painel.querySelector('#cp-hue');
+    const hueThumb = painel.querySelector('#cp-hue-thumb');
+    const preview = painel.querySelector('#cp-preview');
+    const rInp = painel.querySelector('#cp-r');
+    const gInp = painel.querySelector('#cp-g');
+    const bInp = painel.querySelector('#cp-b');
+
+    function atualizarVisual(){
+      svEl.style.background = `hsl(${h}, 100%, 50%)`;
+      svThumb.style.left = (s*svEl.clientWidth)+'px';
+      svThumb.style.top = ((1-v)*svEl.clientHeight)+'px';
+      hueThumb.style.left = (h/360*hueEl.clientWidth)+'px';
+      const rgb = hsvParaRgb(h,s,v);
+      r = rgb.r; g = rgb.g; b = rgb.b;
+      preview.style.background = rgbParaHex(r,g,b);
+      rInp.value = Math.round(r);
+      gInp.value = Math.round(g);
+      bInp.value = Math.round(b);
+    }
+    function atualizarDeRgb(){
+      const novo = rgbParaHsv(r,g,b);
+      h = novo.h; s = novo.s; v = novo.v;
+      atualizarVisual();
+    }
+    function svDeEvento(e){
+      const rect = svEl.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      const cy = e.touches ? e.touches[0].clientY : e.clientY;
+      s = Math.max(0, Math.min(1, (cx-rect.left)/rect.width));
+      v = Math.max(0, Math.min(1, 1-(cy-rect.top)/rect.height));
+      atualizarVisual();
+    }
+    function hueDeEvento(e){
+      const rect = hueEl.getBoundingClientRect();
+      const cx = e.touches ? e.touches[0].clientX : e.clientX;
+      h = Math.max(0, Math.min(360, (cx-rect.left)/rect.width*360));
+      atualizarVisual();
+    }
+    function ligarArraste(el, handler){
+      let arrastando = false;
+      const onMove = (e)=>{ if (arrastando){ handler(e); e.preventDefault(); } };
+      const onUp = ()=>{
+        arrastando = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onUp);
+      };
+      el.addEventListener('mousedown', (e)=>{ arrastando=true; handler(e); document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); });
+      el.addEventListener('touchstart', (e)=>{ arrastando=true; handler(e); document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onUp); }, {passive:true});
+    }
+    ligarArraste(svEl, svDeEvento);
+    ligarArraste(hueEl, hueDeEvento);
+
+    [[rInp,'r'],[gInp,'g'],[bInp,'b']].forEach(([inp, canal])=>{
+      inp.addEventListener('change', ()=>{
+        let n = parseInt(inp.value, 10);
+        if (isNaN(n)) n = 0;
+        n = Math.max(0, Math.min(255, n));
+        if (canal==='r') r=n; else if (canal==='g') g=n; else b=n;
+        atualizarDeRgb();
+      });
+    });
+
+    atualizarVisual();
+
+    painel.querySelector('[data-acao="cancelar"]').addEventListener('click', fechar);
+    painel.querySelector('[data-acao="salvar"]').addEventListener('click', ()=>{
+      const hexFinal = rgbParaHex(r,g,b);
+      fechar();
+      aoSalvar(hexFinal);
+    });
+  });
+}
+
+
 // Calendário customizado — substitui o <input type="date"> nativo (cujo menu
 // é controlado pelo navegador/SO e não dá pra estilizar nem animar).
 function buildCalendarField(valorISO, onChange){
@@ -1222,7 +1381,7 @@ function renderMultiSelectCell(table, row, field){
 }
 
 function celulaColorida(cor, textoHtml){
-  return `<div class="fill" style="background:${corMenuParaTema(cor)};color:${textoParaCorDeMenu(cor)}">${textoHtml}</div>`;
+  return `<div class="fill" style="background-color:${corMenuParaTema(cor)};color:${textoParaCorDeMenu(cor)}">${textoHtml}</div>`;
 }
 
 function statusBadgeGeneric(grupo, valor){
@@ -1241,7 +1400,7 @@ function buildSelDropdown({ grupo, valorAtual, onSelect, permitirVazio, boolMap,
   let valorExibido = boolMap ? (valorAtual ? 'Sim' : (valorAtual===false ? 'Nao' : '')) : (valorAtual || '');
   const corBase = valorExibido ? corDaOpcao(grupo, valorExibido) : 'var(--text-faint)';
   const rotulo = valorExibido || (permitirVazio ? 'Sem definir' : '—');
-  const html = `<button type="button" class="sel-dd-btn" id="${id}" style="background:${corMenuParaTema(corBase)};color:${textoParaCorDeMenu(corBase)}">${escapeHtml(rotulo)}</button>`;
+  const html = `<button type="button" class="sel-dd-btn" id="${id}" style="background-color:${corMenuParaTema(corBase)};color:${textoParaCorDeMenu(corBase)}">${escapeHtml(rotulo)}</button>`;
   queueMicrotask(()=>{
     const btn = document.getElementById(id);
     if (!btn) return;
@@ -1529,9 +1688,10 @@ async function viewTabela(tableName){
       abrirFlutuante(btn, 'msel-panel-float', (painel)=>{
         const marcados = state.colFiltros[key] || new Set(valoresDisponiveis);
         function montarLista(filtroTexto){
-          const itens = valoresDisponiveis.filter(v=>!filtroTexto || v.toLowerCase().includes(filtroTexto));
-          return itens.map(v=>{
-            const rotulo = f.edit==='date' ? (fmtDate(v) || '(vazio)') : (v || '(vazio)');
+          const itens = valoresDisponiveis
+            .map(v=>({ v, rotulo: f.edit==='date' ? (fmtDate(v) || '(vazio)') : (v || '(vazio)') }))
+            .filter(({rotulo})=>!filtroTexto || rotulo.toLowerCase().includes(filtroTexto));
+          return itens.map(({v,rotulo})=>{
             const dot = (f.edit==='select' && v) ? `<span class="dd-dot" style="background:${corMenuParaTema(corDaOpcao(f.group, v))};flex-shrink:0;"></span>` : '';
             return `<label><input type="checkbox" value="${escapeHtml(v)}" ${marcados.has(v)?'checked':''}> ${dot}${escapeHtml(rotulo)}</label>`;
           }).join('') || '<div style="padding:6px;color:var(--text-faint);font-size:12px;">Nenhum valor encontrado.</div>';
@@ -1714,7 +1874,7 @@ async function viewMinhasTarefas(){
         validar: validarStatusConclusao('projetos', r.id),
         onSelect: async (v, btn)=>{
           const ok = await saveField('projetos', r.id, 'status', v);
-          if (ok){ flashSavedCor(btn); toast('Status atualizado.'); }
+          if (ok){ r.status = v; flashSavedCor(btn); toast('Status atualizado.'); aplicarFiltrosOrdenacao(); }
         },
       });
       tr.querySelector('[data-cell="prioridade"]').innerHTML = r.prioridade
@@ -1724,11 +1884,14 @@ async function viewMinhasTarefas(){
       const pctId = 'my_pct_'+r.id;
       pctCell.innerHTML = `<input type="number" class="cell-number" id="${pctId}" value="${Math.round((r.percentual_conclusao||0)*100)}" min="0" max="100" step="5" style="width:64px" />%`;
       pctCell.querySelector('input').addEventListener('change', async (e)=>{
-        const ok = await saveField('projetos', r.id, 'percentual_conclusao', parseFloat(e.target.value)/100);
-        if (ok){ flashSaved(e.target); toast('% de conclusão atualizado.'); }
+        const novoValor = parseFloat(e.target.value)/100;
+        const ok = await saveField('projetos', r.id, 'percentual_conclusao', novoValor);
+        if (ok){ r.percentual_conclusao = novoValor; flashSaved(e.target); toast('% de conclusão atualizado.'); aplicarFiltrosOrdenacao(); }
       });
       tr.querySelector('[data-cell="inicio"]').innerHTML = buildCalendarField(r.data_inicio, async (novoValor)=>{
-        return await saveField('projetos', r.id, 'data_inicio', novoValor);
+        const ok = await saveField('projetos', r.id, 'data_inicio', novoValor);
+        if (ok){ r.data_inicio = novoValor; aplicarFiltrosOrdenacao(); }
+        return ok;
       });
     });
   }
@@ -1804,9 +1967,10 @@ async function viewMinhasTarefas(){
         abrirFlutuante(btn, 'msel-panel-float', (painel)=>{
           const marcados = state.colFiltros[key] || new Set(valoresDisponiveis);
           function montarLista(filtroTexto){
-            const itens = valoresDisponiveis.filter(v=>!filtroTexto || v.toLowerCase().includes(filtroTexto));
-            return itens.map(v=>{
-              const rotulo = campo.tipo==='date' || campo.tipo==='date_readonly' ? (fmtDate(v) || '(vazio)') : (v || '(vazio)');
+            const itens = valoresDisponiveis
+              .map(v=>({ v, rotulo: campo.tipo==='date' || campo.tipo==='date_readonly' ? (fmtDate(v) || '(vazio)') : (v || '(vazio)') }))
+              .filter(({rotulo})=>!filtroTexto || rotulo.toLowerCase().includes(filtroTexto));
+            return itens.map(({v,rotulo})=>{
               const dot = (campo.tipo==='select' && v) ? `<span class="dd-dot" style="background:${corMenuParaTema(corDaOpcao(campo.group, v))};flex-shrink:0;"></span>` : '';
               return `<label><input type="checkbox" value="${escapeHtml(v)}" ${marcados.has(v)?'checked':''}> ${dot}${escapeHtml(rotulo)}</label>`;
             }).join('') || '<div style="padding:6px;color:var(--text-faint);font-size:12px;">Nenhum valor encontrado.</div>';
@@ -1863,6 +2027,7 @@ async function viewMinhasTarefas(){
     </table></div>
   `;
   ligarCabecalho();
+  aplicarFiltrosAtual = aplicarFiltrosOrdenacao;
   aplicarFiltrosOrdenacao();
   atualizarIndicadoresOrdenacao();
   atualizarIndicadoresFiltro();
@@ -1943,7 +2108,7 @@ async function viewOpcoesMenu(){
       <tr data-id="${o.id}">
         <td><input type="text" class="cell-input" data-f="valor" value="${escapeHtml(o.valor)}" style="min-width:200px" /></td>
         <td><div style="display:flex;align-items:center;gap:6px;">
-          <input type="color" class="cor-swatch" data-f="cor" value="${o.cor}" />
+          <button type="button" class="cor-swatch" data-cor-btn style="background:${o.cor}" title="Escolher cor" aria-label="Escolher cor"></button>
           <input type="text" class="cell-input cor-hex" data-f-hex="cor" data-id="${o.id}" value="${escapeHtml(o.cor)}" maxlength="7" style="width:88px;font-family:var(--mono);text-transform:uppercase;" />
         </div></td>
         <td><input type="number" class="cell-number" data-f="ordem" value="${o.ordem}" style="width:64px" /></td>
@@ -1956,14 +2121,10 @@ async function viewOpcoesMenu(){
       const id = tr.dataset.id;
       const linha = data.find(o=>o.id===id);
       tr.querySelectorAll('[data-f]').forEach(inp=>{
-        const evt = inp.type==='checkbox' ? 'change' : (inp.type==='color' || inp.type==='number' ? 'change' : 'blur');
+        const evt = inp.type==='checkbox' ? 'change' : (inp.type==='number' ? 'change' : 'blur');
         inp.addEventListener(evt, async ()=>{
           const f = inp.dataset.f;
-          let v = inp.type==='checkbox' ? inp.checked : (inp.type==='number' ? parseInt(inp.value||0) : inp.value);
-          if (inp.type==='color'){
-            const hexInput = tr.querySelector('.cor-hex');
-            if (hexInput) hexInput.value = v;
-          }
+          const v = inp.type==='checkbox' ? inp.checked : (inp.type==='number' ? parseInt(inp.value||0) : inp.value);
           const { error } = await sb.from('menu_opcoes').update({ [f]: v }).eq('id', id);
           if (error) return toast('Erro: '+error.message, true);
           if (linha) linha[f] = v; // atualiza a lista local, não só o cache global
@@ -1972,18 +2133,19 @@ async function viewOpcoesMenu(){
         });
       });
       const hexInput = tr.querySelector('.cor-hex');
+      const corBtn = tr.querySelector('[data-cor-btn]');
       if (hexInput){
         hexInput.addEventListener('blur', async ()=>{
           let v = hexInput.value.trim();
           if (v && v[0] !== '#') v = '#'+v;
           if (!/^#[0-9a-fA-F]{6}$/.test(v)){
             toast('Cor inválida — use o formato hexadecimal, ex: #E8590C', true);
-            hexInput.value = tr.querySelector('.cor-swatch').value;
+            hexInput.value = linha ? linha.cor : '';
             return;
           }
           v = v.toUpperCase();
           hexInput.value = v;
-          tr.querySelector('.cor-swatch').value = v;
+          if (corBtn) corBtn.style.background = v;
           const { error } = await sb.from('menu_opcoes').update({ cor: v }).eq('id', id);
           if (error) return toast('Erro: '+error.message, true);
           if (linha) linha.cor = v;
@@ -1991,6 +2153,20 @@ async function viewOpcoesMenu(){
           await loadMenuOpcoes();
         });
         hexInput.addEventListener('keydown', (e)=>{ if (e.key==='Enter') hexInput.blur(); });
+      }
+      if (corBtn){
+        corBtn.addEventListener('click', ()=>{
+          abrirSeletorDeCor(corBtn, linha ? linha.cor : o.cor, async (novoHex)=>{
+            corBtn.style.background = novoHex;
+            if (hexInput) hexInput.value = novoHex;
+            const { error } = await sb.from('menu_opcoes').update({ cor: novoHex }).eq('id', id);
+            if (error) return toast('Erro: '+error.message, true);
+            if (linha) linha.cor = novoHex;
+            flashSaved(corBtn);
+            toast('Cor salva.');
+            await loadMenuOpcoes();
+          });
+        });
       }
       tr.querySelector('[data-action="del"]').addEventListener('click', async ()=>{
         if (!(await confirmarAcao('Excluir esta opção? Registros que já usam esse valor mantêm o texto, só some do menu suspenso.'))) return;
@@ -2386,7 +2562,7 @@ async function viewAuditoria(){
         <td>${new Date(r.created_at).toLocaleString('pt-BR')}</td>
         <td>${escapeHtml(r.user_nome||r.user_email||'—')}</td>
         <td>${escapeHtml(r.tabela)}</td>
-        <td><span class="badge" style="background:${cor}">${r.acao}</span></td>
+        <td><span class="badge" style="background-color:${cor}">${r.acao}</span></td>
         <td><button class="icon-btn" onclick='showDiff(${JSON.stringify(JSON.stringify(r)).replace(/'/g,"&#39;")})'>ver diferença</button></td>
       </tr>`;
     }).join('');
@@ -2472,11 +2648,10 @@ async function viewAuditoria(){
       abrirFlutuante(btn, 'msel-panel-float', (painel)=>{
         const marcados = state.colFiltros[key] || new Set(valoresDisponiveis);
         function montarLista(filtroTexto){
-          const itens = valoresDisponiveis.filter(v=>!filtroTexto || v.toLowerCase().includes(filtroTexto));
-          return itens.map(v=>{
-            const rotulo = campo.key==='created_at' ? (v ? new Date(v).toLocaleString('pt-BR') : '(vazio)') : (v || '(vazio)');
-            return `<label><input type="checkbox" value="${escapeHtml(v)}" ${marcados.has(v)?'checked':''}> ${escapeHtml(rotulo)}</label>`;
-          }).join('') || '<div style="padding:6px;color:var(--text-faint);font-size:12px;">Nenhum valor encontrado.</div>';
+          const itens = valoresDisponiveis
+            .map(v=>({ v, rotulo: campo.key==='created_at' ? (v ? new Date(v).toLocaleString('pt-BR') : '(vazio)') : (v || '(vazio)') }))
+            .filter(({rotulo})=>!filtroTexto || rotulo.toLowerCase().includes(filtroTexto));
+          return itens.map(({v,rotulo})=>`<label><input type="checkbox" value="${escapeHtml(v)}" ${marcados.has(v)?'checked':''}> ${escapeHtml(rotulo)}</label>`).join('') || '<div style="padding:6px;color:var(--text-faint);font-size:12px;">Nenhum valor encontrado.</div>';
         }
         painel.innerHTML = `
           <input type="text" class="cell-input" id="busca-valores" placeholder="Buscar valor…" style="width:100%;margin-bottom:6px;font-size:12px;padding:5px 7px;" />
@@ -2661,7 +2836,7 @@ window.abrirDetalhes = async function(tabela, id){
       <h3 style="margin-bottom:4px;">${escapeHtml(tituloExibido)}</h3>
       <div style="display:flex;gap:26px;flex-wrap:wrap;">
         <div><div class="kpi-label" style="margin-bottom:4px;">Responsável</div><div style="font-size:13px;">${escapeHtml(nomesResp)}</div></div>
-        <div><div class="kpi-label" style="margin-bottom:4px;">Status</div><div><span class="badge" style="background:${corMenuParaTema(corStatus)};color:${textoParaCorDeMenu(corStatus)}">${escapeHtml(registro.status||'Vazio')}</span></div></div>
+        <div><div class="kpi-label" style="margin-bottom:4px;">Status</div><div><span class="badge" style="background-color:${corMenuParaTema(corStatus)};color:${textoParaCorDeMenu(corStatus)}">${escapeHtml(registro.status||'Vazio')}</span></div></div>
         <div><div class="kpi-label" style="margin-bottom:4px;">Prazo</div><div style="font-size:13px;">${fmtDate(registro[cfg.campoPrazo]) || 'Vazio'}</div></div>
       </div>
     </div>
@@ -2884,7 +3059,7 @@ function svgBarChart(pairs, color){
   const areaW = w - padL - padR, areaH = h - padT - padB;
   const max = Math.max(1, ...pairs.map(p=>p[1]));
   const ticks = calcularTicksEixo(max);
-  const maxEixo = ticks[ticks.length-1] || max;
+  const maxEixo = Math.max(ticks[ticks.length-1] || max, max);
   const barW = areaW / pairs.length * 0.6;
   const gap = areaW / pairs.length;
   const eixo = svgEixoValores(ticks, maxEixo, padL, padR, padT, areaH, w);
@@ -2908,7 +3083,7 @@ function svgGroupedBarChart(labels, series, cores){
   const areaW = w - padL - padR, areaH = h - padT - padB;
   const maxVal = Math.max(1, ...series.flatMap(s=>s.valores));
   const ticks = calcularTicksEixo(maxVal);
-  const maxEixo = ticks[ticks.length-1] || maxVal;
+  const maxEixo = Math.max(ticks[ticks.length-1] || maxVal, maxVal);
   const nGroups = Math.max(1, labels.length);
   const nSeries = Math.max(1, series.length);
   const groupW = areaW / nGroups;
@@ -3249,30 +3424,28 @@ async function viewDashboard(){
     if (!podeDefinirMetas) return;
     const modal = document.getElementById('modal-content');
     modal.classList.add('modal-wide');
+    let tipoEsc = Object.keys(TIPOS_META)[0];
     let anoEsc = anoAtual;
-    let mesEsc = thisMonthKey;
 
     function montar(){
       modal.innerHTML = `
         <div class="modal-fixed-head">
           <h3 style="margin-bottom:4px;">🎯 Definir metas</h3>
-          <div style="font-size:12.5px;color:var(--text-dim);">Escolha o mês e defina a meta de cada indicador num só lugar.</div>
+          <div style="font-size:12.5px;color:var(--text-dim);">Escolha o indicador e o ano — defina a meta de cada mês numa lista só.</div>
           <div class="toolbar" style="margin:14px 0 0;">
+            <span id="metas-tipo-picker"></span>
             <span id="metas-ano-picker"></span>
-            <span id="metas-mes-picker"></span>
           </div>
         </div>
         <div class="modal-scroll-body" id="metas-lista"></div>
         <div class="modal-fixed-foot"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>
       `;
+      document.getElementById('metas-tipo-picker').innerHTML = buildSimplePicker(tipoEsc, Object.keys(TIPOS_META).map(t=>({value:t,label:TIPOS_META[t]})), (v)=>{
+        tipoEsc = v;
+        renderLista();
+      }, { classeExtra:'dash-period-picker', });
       document.getElementById('metas-ano-picker').innerHTML = buildSimplePicker(anoEsc, anosList.map(a=>({value:a,label:a})), (v)=>{
         anoEsc = v;
-        const doAno = mesesDoAno(anoEsc);
-        if (!doAno.includes(mesEsc)) mesEsc = doAno.includes(thisMonthKey) ? thisMonthKey : doAno[0];
-        montar();
-      }, { classeExtra:'dash-period-picker' });
-      document.getElementById('metas-mes-picker').innerHTML = buildSimplePicker(mesEsc, mesesDoAno(anoEsc).map(mk=>({value:mk,label:monthLabelCurto(mk+'-01')})), (v)=>{
-        mesEsc = v;
         renderLista();
       }, { classeExtra:'dash-period-picker' });
       renderLista();
@@ -3280,16 +3453,17 @@ async function viewDashboard(){
 
     function renderLista(){
       const lista = document.getElementById('metas-lista');
-      lista.innerHTML = Object.keys(TIPOS_META).map(tipo=>{
-        const atual = metaDe(tipo, mesEsc);
+      const meses = mesesDoAno(anoEsc);
+      lista.innerHTML = meses.map(mk=>{
+        const atual = metaDe(tipoEsc, mk);
         return `<div style="display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--border-soft);">
-          <div style="flex:1;font-size:13px;font-weight:600;">${TIPOS_META[tipo]}</div>
-          <input type="number" step="0.01" class="cell-number meta-modal-input" data-tipo="${tipo}" value="${atual ?? ''}" placeholder="Sem meta" style="width:110px;" />
+          <div style="flex:1;font-size:13px;font-weight:600;text-transform:capitalize;">${monthLabelCurto(mk+'-01')} de ${anoEsc}</div>
+          <input type="number" step="0.01" class="cell-number meta-modal-input" data-mes="${mk}" value="${atual ?? ''}" placeholder="Sem meta" style="width:110px;" />
         </div>`;
       }).join('');
       lista.querySelectorAll('.meta-modal-input').forEach(inp=>{
         inp.addEventListener('change', async ()=>{
-          const tipo = inp.dataset.tipo, mk = mesEsc;
+          const tipo = tipoEsc, mk = inp.dataset.mes;
           const valor = inp.value === '' ? null : parseFloat(inp.value);
           if (valor == null){
             await sb.from('metas').delete().eq('tipo', tipo).eq('mes_ref', mk+'-01');
