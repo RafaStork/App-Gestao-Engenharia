@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Gestão de Tarefas — Engenharia</title>
+<meta name="description" content="Sistema de gestão de tarefas de Engenharia — SAC, Vendas e Projetos." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -12,6 +13,9 @@
   --font:'Montserrat', sans-serif;
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --r:8px;
+  --r-sm:6px;
+  --r-lg:14px;
+  --r-xl:18px;
   --c-ink:#1C1F24;
   --c-moss:#2B8A3E;
   --c-sage:#CFE8D1;
@@ -20,56 +24,94 @@
   --c-amber:#f9b215;
   --c-blue:#2d5da9;
   --c-white:#ffffff;
+  --ease: cubic-bezier(.22,.7,.32,1);
+  --ease-out: cubic-bezier(.16,.84,.44,1);
+  --ease-spring: cubic-bezier(.34,1.56,.64,1);
+  --ease-inout: cubic-bezier(.65,.05,.36,1);
 }
 [data-theme="light"]{
-  --bg:#EEF0F2; --bg-soft:#F4F5F7; --surface:#FFFFFF; --surface-2:#FAFAF8;
+  --bg:#EEF0F2; --bg-soft:#F4F5F7; --surface:#FFFFFF; --surface-2:#FAFBFA;
   --border:#E2E5E9; --border-soft:#EDEFF2; --zebra:rgba(20,24,30,.025);
   --text:var(--c-ink); --text-dim:#5A626C; --text-faint:#9099A3;
   --accent:var(--c-orange); --accent-2:var(--c-blue); --accent-3:var(--c-amber);
-  --shadow: 0 1px 2px rgba(20,24,30,.06), 0 6px 20px rgba(20,24,30,.06);
+  --accent-soft: rgba(232,89,12,.10);
+  --accent-2-soft: rgba(45,93,169,.10);
+  --shadow-sm: 0 1px 2px rgba(20,24,30,.05);
+  --shadow: 0 1px 2px rgba(20,24,30,.05), 0 8px 24px rgba(20,24,30,.07);
+  --shadow-lg: 0 12px 20px -8px rgba(20,24,30,.10), 0 26px 52px -12px rgba(20,24,30,.16);
+  --shadow-glow: 0 0 0 4px rgba(43,138,62,.14), 0 4px 14px rgba(43,138,62,.22);
+  --ring: 0 0 0 3.5px var(--accent-soft);
 }
 [data-theme="dark"]{
-  --bg:#1A1D22; --bg-soft:#20242A; --surface:#22262C; --surface-2:#282C33;
-  --border:#33383F; --border-soft:#2A2E35; --zebra:rgba(255,255,255,.025);
-  --text:#E8EAED; --text-dim:#A8AFB8; --text-faint:#6B7280;
-  --accent:#F16B24; --accent-2:#5c8fd6; --accent-3:var(--c-amber);
-  --shadow: 0 1px 2px rgba(0,0,0,.35), 0 6px 20px rgba(0,0,0,.35);
+  --bg:#15171B; --bg-soft:#1D2026; --surface:#20242A; --surface-2:#262A31;
+  --border:#31363E; --border-soft:#282C33; --zebra:rgba(255,255,255,.025);
+  --text:#EDEFF2; --text-dim:#AAB1BC; --text-faint:#6E7683;
+  --accent:#F1783A; --accent-2:#6C9BDB; --accent-3:var(--c-amber);
+  --accent-soft: rgba(241,120,58,.16);
+  --accent-2-soft: rgba(108,155,219,.16);
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.32);
+  --shadow-lg: 0 12px 22px -8px rgba(0,0,0,.42), 0 28px 54px -12px rgba(0,0,0,.55);
+  --shadow-glow: 0 0 0 4px rgba(103,192,120,.20), 0 4px 16px rgba(103,192,120,.28);
+  --ring: 0 0 0 3.5px var(--accent-soft);
 }
 *{box-sizing:border-box;}
 html,body{height:100%;}
-body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; transition:background .2s ease, color .2s ease; -webkit-font-smoothing:antialiased; }
+body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font); min-height:100vh; transition:background .2s ease, color .2s ease; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; font-size:14px; line-height:1.5; }
 a{color:inherit;}
 button{font-family:var(--font); cursor:pointer;}
 input,select,textarea{font-family:var(--font);}
 
+/* Acessibilidade: indicador de foco visível para navegação por teclado,
+   sem alterar nenhum comportamento — só aparece quando o elemento recebe
+   foco via teclado (Tab), não em cliques de mouse. */
+:focus-visible{ outline:2px solid var(--accent-2); outline-offset:2px; border-radius:4px; }
+
 .stamp{ display:inline-flex; align-items:center; justify-content:center;
   clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
-  background:var(--accent); color:var(--c-white); font-weight:800; font-size:15px; width:34px; height:34px; flex-shrink:0; }
+  background:var(--accent); color:var(--c-white); font-weight:800; font-size:15px; width:34px; height:34px; flex-shrink:0;
+  box-shadow:0 2px 8px var(--accent-soft); }
 .role-stamp{ display:inline-flex; align-items:center; justify-content:center;
   clip-path:polygon(20% 5%, 80% 5%, 100% 50%, 80% 95%, 20% 95%, 0% 50%);
   font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:6px 12px; color:var(--c-white); }
 .role-admin{background:var(--accent);} .role-gestor{background:var(--accent-2);} .role-usuario{background:var(--text-faint);}
 
-#login-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:var(--bg); }
-.login-card{ width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:34px 30px 28px; box-shadow:var(--shadow); }
-.login-head{ display:flex; align-items:center; gap:14px; margin-bottom:26px; }
+/* Seletor de papel do usuário (Usuários > Papel, e criação de usuário): uma
+   faixa lateral colorida — igual à paleta do "role-stamp" — dá pra ver de
+   longe qual papel está selecionado sem precisar ler o texto do <select>. */
+.role-picker{ border-left:4px solid var(--text-faint); font-weight:700; min-width:130px; transition:border-left-color .18s var(--ease-out), border-color .18s var(--ease-out), box-shadow .18s var(--ease-out); }
+.role-picker[data-role="admin"]{ border-left-color:var(--accent); }
+.role-picker[data-role="gestor"]{ border-left-color:var(--accent-2); }
+.role-picker[data-role="usuario"]{ border-left-color:var(--text-faint); }
+
+#login-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:
+  radial-gradient(1100px 550px at 15% 0%, var(--accent-soft), transparent 60%),
+  radial-gradient(900px 500px at 100% 100%, var(--accent-2-soft), transparent 55%),
+  var(--bg); }
+.login-card{ width:100%; max-width:392px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-xl); padding:40px 36px 32px; box-shadow:var(--shadow-lg); position:relative; overflow:hidden; animation:cardIn .5s var(--ease-out) both; }
+.login-card::before{ content:''; position:absolute; top:0; left:0; right:0; height:4px; background:linear-gradient(90deg, var(--accent), var(--accent-3)); }
+.login-head{ display:flex; align-items:center; gap:14px; margin-bottom:30px; }
 .brand-eyebrow{ font-family:var(--mono); font-size:11px; letter-spacing:.14em; color:var(--accent); text-transform:uppercase; font-weight:700; }
 .brand-title{ font-size:20px; font-weight:800; margin:2px 0 0; line-height:1.25; }
-.field{margin-bottom:16px;}
-.field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--text-faint); margin-bottom:6px; font-weight:700; }
-.field input, .field select, .field textarea{ width:100%; background:var(--bg-soft); border:1.5px solid var(--border); color:var(--text); padding:11px 13px; font-size:14px; outline:none; border-radius:10px; }
-.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent);}
-.btn{ border:1px solid var(--border); background:var(--surface); color:var(--text-dim); padding:9px 15px; font-size:12.5px; font-weight:700; border-radius:8px; }
-.btn:hover{border-color:var(--text-faint); color:var(--text);}
-.btn-primary{ background:var(--c-ink); border-color:var(--c-ink); color:#fff; width:100%; padding:12px 16px; font-weight:700; letter-spacing:.01em; font-size:13.5px; border-radius:10px; }
+.field{margin-bottom:18px;}
+.field label{ display:block; font-size:11px; text-transform:uppercase; letter-spacing:.07em; color:var(--text-faint); margin-bottom:7px; font-weight:700; }
+.field input, .field select, .field textarea{ width:100%; background:var(--bg-soft); border:1.5px solid var(--border); color:var(--text); padding:11px 13px; font-size:14px; outline:none; border-radius:10px; transition:border-color .15s ease, box-shadow .15s ease, background .15s ease; }
+.field input:hover, .field select:hover, .field textarea:hover{border-color:var(--text-faint);}
+.field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent); box-shadow:var(--ring); background:var(--surface);}
+.btn{ border:1px solid var(--border); background:var(--surface); color:var(--text-dim); padding:9px 15px; font-size:12.5px; font-weight:700; border-radius:var(--r); transition:background .18s var(--ease-out), color .18s var(--ease-out), border-color .18s var(--ease-out), box-shadow .22s var(--ease-out), transform .14s var(--ease-spring); }
+.btn:hover{border-color:var(--text-faint); color:var(--text); box-shadow:var(--shadow-sm); transform:translateY(-1px);}
+.btn:active{transform:translateY(0) scale(.97); box-shadow:none; transition-duration:.06s;}
+.btn-primary{ background:var(--c-ink); border-color:var(--c-ink); color:#fff; width:100%; padding:12.5px 16px; font-weight:700; letter-spacing:.01em; font-size:13.5px; border-radius:10px; transition:filter .18s var(--ease-out), box-shadow .22s var(--ease-out), transform .14s var(--ease-spring); box-shadow:var(--shadow-sm); }
 [data-theme="dark"] .btn-primary{ background:var(--accent); border-color:var(--accent); }
-.btn-primary:hover{filter:brightness(1.12);}
-.btn-primary:disabled{opacity:.5; cursor:not-allowed;}
+.btn-primary:hover{filter:brightness(1.12); box-shadow:var(--shadow); transform:translateY(-1px);}
+.btn-primary:active{transform:translateY(0) scale(.98); box-shadow:var(--shadow-sm); transition-duration:.06s;}
+.btn-primary:disabled{opacity:.5; cursor:not-allowed; transform:none; filter:none;}
 .btn-ghost{background:transparent; border-color:transparent; color:var(--text-dim);}
-.error-msg{ color:var(--accent); font-size:13px; margin-top:14px; font-weight:600; }
-.hint{ font-size:12px; color:var(--text-faint); margin-top:16px; line-height:1.6; }
+.error-msg{ color:#fff; background:var(--accent); font-size:12.5px; margin-top:14px; font-weight:600; padding:10px 12px; border-radius:8px; display:none; }
+.error-msg:not(:empty){ display:block; animation:kpiIn .25s ease both; }
+.hint{ font-size:12px; color:var(--text-faint); margin-top:18px; line-height:1.6; text-align:center; }
 
-#app-shell{display:none; height:100vh; grid-template-columns:240px 1fr;}
+#app-shell{display:none; height:100vh; grid-template-columns:242px 1fr;}
 #app-shell.active{display:grid;}
 aside{ background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:20px 0 0; position:sticky; top:0; height:100vh; overflow:hidden; z-index:65; }
 .brand-logo{ height:34px; width:auto; display:block; flex-shrink:0; }
@@ -78,206 +120,357 @@ aside{ background:var(--surface); border-right:1px solid var(--border); display:
 .side-brand .brand-name{font-weight:800; font-size:14.5px; line-height:1.25;}
 .nav-scroll{ flex:1; min-height:0; overflow-y:auto; }
 nav.tabs{display:flex; flex-direction:column; gap:2px; padding:0 10px;}
-.tab-btn{ display:flex; align-items:center; gap:10px; padding:9px 12px; background:transparent; border:none; border-radius:8px; color:var(--text-dim); text-align:left; font-size:12.5px; font-weight:600; transition:background .15s ease, color .15s ease; }
-.tab-btn:hover{color:var(--text); background:var(--bg-soft);}
-.tab-btn.active{color:#fff; background:var(--accent);}
+.tab-btn{ display:flex; align-items:center; gap:10px; padding:10px 13px; background:transparent; border:none; border-radius:10px; color:var(--text-dim); text-align:left; font-size:12.5px; font-weight:600; transition:background .2s var(--ease-out), color .2s var(--ease-out), padding-left .22s var(--ease-out), box-shadow .2s var(--ease-out), transform .12s var(--ease-spring); position:relative; }
+.tab-btn::before{ content:''; position:absolute; left:5px; top:50%; width:3px; height:0; border-radius:99px; background:var(--accent); transform:translateY(-50%); transition:height .22s var(--ease-out); }
+.tab-btn:hover{color:var(--text); background:var(--bg-soft); padding-left:16px;}
+.tab-btn:hover::before{ height:15px; }
+.tab-btn:active{ transform:scale(.98); }
+.tab-btn.active{color:#fff; background:var(--accent); box-shadow:0 6px 16px -4px var(--accent-soft), 0 2px 6px -2px rgba(232,89,12,.35); font-weight:700; padding-left:13px;}
+.tab-btn.active::before{ height:0; }
 .side-footer{padding:14px 18px 16px; border-top:1px solid var(--border); margin-top:0; display:flex; flex-direction:column; gap:8px; flex-shrink:0; background:var(--surface);}
 
 .theme-toggle{ width:46px; height:25px; border-radius:999px; border:1px solid var(--border); background:var(--bg); position:relative; padding:0; cursor:pointer; flex-shrink:0; transition:background .2s,border-color .2s; }
 .theme-toggle:hover{border-color:var(--accent);}
-.theme-toggle .knob{ position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%; background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; font-size:11px; line-height:1; transition:left .2s ease; }
-[data-theme="dark"] .theme-toggle{background:rgba(241,107,36,.18);}
+.theme-toggle .knob{ position:absolute; top:2px; left:2px; width:19px; height:19px; border-radius:50%; background:var(--surface); box-shadow:0 1px 3px rgba(0,0,0,.3); display:flex; align-items:center; justify-content:center; font-size:11px; line-height:1; transition:left .2s var(--ease); }
+[data-theme="dark"] .theme-toggle{background:rgba(241,120,58,.18);}
 [data-theme="dark"] .theme-toggle .knob{left:24px;}
 
 /* main fica com altura travada em 100vh; só o miolo de cada tela (o
    #view-root, e dentro dele a tabela) tem rolagem própria — cabeçalho,
    barra de ferramentas e rodapé do menu lateral ficam sempre visíveis. */
-main{ height:100vh; overflow:hidden; display:flex; flex-direction:column; padding:24px 30px 0; }
-.topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:12px; flex-shrink:0; }
-.page-title{font-size:20px; font-weight:800; margin:0;}
-.page-sub{color:var(--text-dim); font-size:12.5px; margin-top:2px;}
-.user-chip{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:6px 6px 6px 14px; font-size:12.5px; font-weight:600; }
+main{ height:100vh; overflow:hidden; display:flex; flex-direction:column; padding:26px 32px 0; }
+.topbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:22px; flex-wrap:wrap; gap:12px; flex-shrink:0; padding-bottom:18px; border-bottom:1px solid var(--border-soft); }
+.page-title{font-size:21px; font-weight:800; margin:0; letter-spacing:-.01em;}
+.page-sub{color:var(--text-dim); font-size:12.5px; margin-top:3px;}
+.user-chip{ display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:11px; padding:6px 6px 6px 14px; font-size:12.5px; font-weight:600; box-shadow:var(--shadow-sm); transition:border-color .2s var(--ease-out), box-shadow .2s var(--ease-out); }
+.user-chip:hover{ border-color:var(--text-faint); box-shadow:var(--shadow); }
 #view-root{ flex:1; min-height:0; overflow-y:auto; padding-bottom:30px; display:flex; flex-direction:column; }
 #view-root > .table-wrap.tabela-principal{ flex:1; min-height:200px; max-height:none; }
 
-.hamburger-btn{ display:none; background:var(--surface); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:9px; font-size:16px; flex-shrink:0; }
+.hamburger-btn{ display:none; background:var(--surface); border:1px solid var(--border); color:var(--text); width:38px; height:38px; border-radius:9px; font-size:16px; flex-shrink:0; transition:background .15s ease, border-color .15s ease; }
 .hamburger-btn:hover{ border-color:var(--accent); color:var(--accent); }
-.aside-backdrop{ display:none; position:fixed; inset:0; background:rgba(10,12,15,.5); z-index:64; }
-.aside-backdrop.active{ display:block; }
+.aside-backdrop{ display:none; position:fixed; inset:0; background:rgba(10,12,15,.5); backdrop-filter:blur(2px); z-index:64; }
+.aside-backdrop.active{ display:block; animation:backdropIn .28s var(--ease-out) both; }
 
 @media (max-width: 880px){
   #app-shell.active{ grid-template-columns:1fr; }
-  aside{ position:fixed; top:0; left:0; width:250px; max-width:82vw; transform:translateX(-100%); transition:transform .25s cubic-bezier(.22,.7,.32,1); box-shadow:0 0 0 rgba(0,0,0,0); }
-  aside.aside-open{ transform:translateX(0); box-shadow:12px 0 40px rgba(0,0,0,.25); }
+  aside{ position:fixed; top:0; left:0; width:250px; max-width:82vw; transform:translateX(-100%); transition:transform .32s var(--ease-out), box-shadow .32s var(--ease-out); box-shadow:0 0 0 rgba(0,0,0,0); will-change:transform; }
+  aside.aside-open{ transform:translateX(0); box-shadow:16px 0 48px -8px rgba(0,0,0,.32); }
   .hamburger-btn{ display:flex; align-items:center; justify-content:center; }
   main{ padding:16px 16px 0; }
-  .topbar{ margin-bottom:16px; }
+  .topbar{ margin-bottom:16px; padding-bottom:14px; }
+  .page-title{font-size:18px;}
+  .kpi-grid{grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px;}
 }
 
 .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; flex-shrink:0;}
-.toolbar select, .toolbar input{ background:var(--surface); border:1px solid var(--border); color:var(--text); padding:8px 10px; font-size:13px; border-radius:8px; }
+.toolbar select, .toolbar input{ background:var(--surface); border:1px solid var(--border); color:var(--text); padding:8px 10px; font-size:13px; border-radius:8px; transition:border-color .15s ease, box-shadow .15s ease; }
+.toolbar select:focus, .toolbar input:focus{ border-color:var(--accent); box-shadow:var(--ring); outline:none; }
 .spacer{flex:1;}
 
-.table-wrap{border:1px solid var(--border); background:var(--surface); border-radius:12px; overflow:auto; box-shadow:var(--shadow); max-height:74vh; flex-shrink:0;}
+.table-wrap{border:1px solid var(--border); background:var(--surface); border-radius:var(--r-lg); overflow:auto; box-shadow:var(--shadow); max-height:74vh; flex-shrink:0;}
 table{width:100%; border-collapse:separate; border-spacing:0; font-size:13px;}
-thead th{ text-align:left; padding:12px 12px; font-size:11px; text-transform:uppercase; letter-spacing:.06em; font-weight:800; color:var(--text); border-bottom:none; box-shadow:inset 0 -2px 0 var(--accent); white-space:nowrap; background:var(--surface-2); position:sticky; top:0; z-index:5; }
-.th-inner{ display:flex; align-items:center; justify-content:space-between; gap:8px; }
-.th-sort{ display:inline-flex; align-items:center; background:none; border:none; padding:0; font:inherit; color:inherit; text-transform:inherit; letter-spacing:inherit; cursor:pointer; }
+thead th{ text-align:left; padding:13px 14px; font-size:11px; text-transform:uppercase; letter-spacing:.055em; font-weight:800; color:var(--text); border-bottom:none; box-shadow:inset 0 -2px 0 var(--accent); white-space:nowrap; background:var(--surface-2); position:sticky; top:0; z-index:5; }
+.th-inner{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
+.th-sort{ display:inline-flex; align-items:center; gap:5px; background:none; border:none; padding:2px 2px; margin:-2px -2px; border-radius:5px; font:inherit; color:inherit; text-transform:inherit; letter-spacing:inherit; cursor:pointer; transition:color .15s var(--ease-out); }
 .th-sort:hover{color:var(--accent);}
-.sort-arrow{color:var(--accent); font-size:10px;}
-.th-filtro{ background:none; border:none; color:var(--text-faint); font-size:11px; padding:2px 5px; border-radius:5px; cursor:pointer; flex-shrink:0; }
+.sort-arrow{color:var(--accent); font-size:10px; line-height:1;}
+.th-filtro{ background:none; border:none; color:var(--text-faint); font-size:11px; padding:3px 6px; border-radius:6px; cursor:pointer; flex-shrink:0; line-height:1; transition:background .15s var(--ease-out), color .15s var(--ease-out), transform .12s var(--ease-spring); }
 .th-filtro:hover{background:var(--bg-soft); color:var(--text);}
-.th-filtro.ativo{color:#fff; background:var(--accent);}
-.link-btn{ background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; padding:3px 5px; cursor:pointer; }
-.link-btn:hover{text-decoration:underline;}
-tbody td{ padding:6px 8px; border-bottom:1px solid var(--border-soft); white-space:nowrap; position:relative; }
+.th-filtro:active{transform:scale(.9);}
+.th-filtro.ativo{color:#fff; background:var(--accent); box-shadow:0 2px 6px -1px var(--accent-soft);}
+.link-btn{ background:none; border:none; color:var(--accent); font-size:11px; font-weight:700; padding:3px 5px; cursor:pointer; border-radius:4px; }
+.link-btn:hover{text-decoration:underline; background:var(--accent-soft);}
+tbody td{ padding:7px 8px; border-bottom:1px solid var(--border-soft); white-space:nowrap; position:relative; vertical-align:middle; }
+tbody td.row-actions{ border-bottom:none; }
+tbody tr{ transition:background .12s ease, box-shadow .12s ease; }
 tbody tr:nth-child(even){ background:var(--zebra); }
-tbody tr:hover{background:var(--bg-soft);}
-.empty-row td{color:var(--text-faint); text-align:center; padding:40px 14px;}
+tbody tr:hover{background:var(--bg-soft); box-shadow:inset 3px 0 0 var(--accent);}
+.empty-row td{color:var(--text-faint); text-align:center; padding:52px 14px; font-size:13px;}
+.empty-row td::before{ content:'—'; display:block; font-size:22px; margin-bottom:8px; color:var(--text-faint); opacity:.5; letter-spacing:.3em; }
 
 
-.cell-input, .cell-select, .cell-date, .cell-number{ width:100%; min-width:110px; background:transparent; border:1px solid transparent; color:var(--text); padding:6px 7px; font-size:13px; border-radius:6px; font-family:var(--font); }
+.cell-input, .cell-select, .cell-date, .cell-number{ width:100%; min-width:110px; background:var(--bg-soft); border:1px solid var(--border-soft); color:var(--text); padding:6px 8px; font-size:13px; border-radius:var(--r-sm); font-family:var(--font); transition:background .16s var(--ease-out), border-color .16s var(--ease-out), box-shadow .16s var(--ease-out); }
+[data-theme="light"] .cell-input, [data-theme="light"] .cell-select, [data-theme="light"] .cell-date, [data-theme="light"] .cell-number{ background:rgba(20,24,30,.02); border-color:rgba(20,24,30,.055); }
 .cell-number{font-family:var(--mono);}
-.cell-input:hover, .cell-select:hover, .cell-date:hover, .cell-number:hover{background:var(--bg-soft);}
-.cell-input:focus, .cell-select:focus, .cell-date:focus, .cell-number:focus{background:var(--bg-soft); border-color:var(--accent); outline:none;}
+/* Setinhas dos campos numéricos (meta, % de conclusão, m² de venda etc.):
+   no Chrome/Edge/Safari (WebKit) trocamos as setinhas minúsculas do sistema
+   por um par de chevrons desenhado por nós, do tamanho da fonte Montserrat,
+   que fica discreto em repouso e ganha destaque no hover/foco. O Firefox não
+   permite restilizar essa parte do campo numérico, então mantém o padrão dele. */
+input[type="number"].cell-number::-webkit-inner-spin-button,
+input[type="number"].cell-number::-webkit-outer-spin-button{
+  -webkit-appearance:none; appearance:none; margin:0;
+  width:16px; height:22px; cursor:pointer; opacity:.5;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 22'%3E%3Cpath d='M4 8.6L8 5l4 3.6' stroke='%232B8A3E' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M4 13.4L8 17l4-3.6' stroke='%232B8A3E' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+  background-size:12px 16px;
+  transition:opacity .16s var(--ease-out), transform .1s var(--ease-out);
+}
+input[type="number"].cell-number:hover::-webkit-inner-spin-button,
+input[type="number"].cell-number:focus::-webkit-inner-spin-button{ opacity:1; }
+[data-theme="dark"] input[type="number"].cell-number::-webkit-inner-spin-button,
+[data-theme="dark"] input[type="number"].cell-number::-webkit-outer-spin-button{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 22'%3E%3Cpath d='M4 8.6L8 5l4 3.6' stroke='%2367C078' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M4 13.4L8 17l4-3.6' stroke='%2367C078' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+.cell-input:hover, .cell-select:hover, .cell-date:hover, .cell-number:hover{background:var(--bg-soft); border-color:var(--border);}
+.cell-input:focus, .cell-select:focus, .cell-date:focus, .cell-number:focus{background:var(--surface); border-color:var(--accent); outline:none; box-shadow:var(--ring);}
 textarea.cell-input{resize:vertical; min-height:34px; font-family:var(--font);}
-.cell-saved{animation: flashSaved .9s ease;}
-@keyframes flashSaved{ 0%{background:var(--c-sage);} 100%{background:transparent;} }
-@keyframes flashSavedCor{ 0%{box-shadow:0 0 0 3px var(--c-sage);} 100%{box-shadow:0 0 0 0px transparent;} }
-.cell-saved-cor{ animation: flashSavedCor .7s ease; }
+/* Feedback de salvamento: um glow verde suave que "acende" rápido e se
+   dissolve devagar, sem cortes secos. O cell-input mantém a borda intacta
+   (só o box-shadow anima) pra não empurrar layout. */
+.cell-saved{ animation: flashSaved 1.1s var(--ease-out); }
+@keyframes flashSaved{
+  0%{ box-shadow:inset 0 0 0 999px rgba(43,138,62,.20), 0 0 0 2px rgba(43,138,62,.30); }
+  30%{ box-shadow:inset 0 0 0 999px rgba(43,138,62,.13), 0 0 0 2px rgba(43,138,62,.18); }
+  100%{ box-shadow:inset 0 0 0 999px rgba(43,138,62,0), 0 0 0 2px rgba(43,138,62,0); }
+}
+.cell-saved-cor{ animation: flashSavedCor 1s var(--ease-out); }
+@keyframes flashSavedCor{
+  0%{ box-shadow:0 0 0 3px rgba(43,138,62,.55), 0 3px 12px rgba(43,138,62,.30); }
+  35%{ box-shadow:0 0 0 2px rgba(43,138,62,.30), 0 2px 8px rgba(43,138,62,.16); }
+  100%{ box-shadow:0 0 0 0 rgba(43,138,62,0), 0 0 0 rgba(43,138,62,0); }
+}
 
-.badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 10px; font-size:11px; font-weight:700; border-radius:999px; color:#fff; white-space:nowrap; }
-.badge-dot{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.85);}
+.badge{ display:inline-flex; align-items:center; gap:6px; padding:4px 12px; font-size:11px; font-weight:700; letter-spacing:.01em; border-radius:999px; color:#fff; white-space:nowrap; box-shadow:0 1px 2px rgba(0,0,0,.10), inset 0 1px 0 rgba(255,255,255,.14); text-shadow:0 1px 1px rgba(0,0,0,.14); }
+.badge-dot{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.92); box-shadow:0 0 6px rgba(255,255,255,.5);}
 
 /* Célula com a cor da opção preenchendo tudo (não só uma tarja) */
 td.cell-colored{ padding:0; }
-td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-height:34px; padding:6px 12px; font-weight:700; font-size:12.5px; white-space:nowrap; }
+td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-height:34px; padding:6px 12px; font-weight:700; font-size:12.5px; letter-spacing:.008em; white-space:nowrap; text-shadow:0 1px 1px rgba(0,0,0,.12); }
 
 /* ── Seletor customizado (substitui <select> nativo, com animação) ──────── */
-.sel-dd-btn{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:150px; border:none; cursor:pointer; padding:6px 10px; border-radius:6px; font-weight:700; font-size:12.5px; min-height:22px; white-space:nowrap; font-family:var(--font); }
-.sel-dd-btn::after{ content:"▾"; font-size:10px; opacity:.85; flex-shrink:0; }
-.dd-panel-float{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow); min-width:180px; max-width:280px; max-height:280px; overflow-y:auto; padding:5px; animation:panelIn .16s ease; }
-.dd-panel-float .dd-opt{ display:flex; align-items:center; gap:8px; padding:7px 10px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer; color:var(--text); }
+.sel-dd-btn{ display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%; min-width:150px; border:none; cursor:pointer; padding:6px 10px; border-radius:var(--r-sm); font-weight:700; font-size:12.5px; min-height:22px; white-space:nowrap; font-family:var(--font); text-shadow:0 1px 1px rgba(0,0,0,.12); box-shadow:inset 0 1px 0 rgba(255,255,255,.12); transition:filter .16s var(--ease-out), transform .12s var(--ease-spring); }
+.sel-dd-btn:hover{filter:brightness(1.06);}
+.sel-dd-btn:active{transform:scale(.985);}
+.sel-dd-btn::after{ content:"▾"; font-size:10px; opacity:.85; flex-shrink:0; transition:transform .18s var(--ease-out); }
+
+/* Botão-gatilho dos seletores customizados neutros (mês, ano, papel, tipo de
+   menu…): visual parecido com um <select> normal do app, mas com painel de
+   opções próprio (.dd-panel-float) em vez do menu nativo do navegador —
+   assim dá pra estilizar a lista de opções, não só o controle fechado. */
+.sel-simple-btn{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  width:100%; min-width:112px; background:var(--surface); border:1px solid var(--border); color:var(--text);
+  font-family:var(--font); font-weight:700; font-size:12.5px; padding:8px 12px; border-radius:9px; cursor:pointer;
+  transition:border-color .18s var(--ease-out), box-shadow .18s var(--ease-out), background-color .18s var(--ease-out), transform .12s var(--ease-spring);
+}
+.sel-simple-btn::after{ content:"▾"; font-size:10px; opacity:.7; flex-shrink:0; margin-left:6px; }
+.sel-simple-btn:hover{ border-color:var(--text-faint); }
+.sel-simple-btn:active{ transform:scale(.98); }
+.sel-simple-btn:focus-visible{ outline:none; border-color:var(--accent); box-shadow:var(--ring); }
+.dd-panel-float{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:13px; box-shadow:var(--shadow-lg); min-width:180px; max-width:280px; max-height:280px; overflow-y:auto; padding:6px; transform-origin:top center; animation:panelIn .2s var(--ease-out); }
+.dd-panel-float .dd-opt{ display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:8px; font-size:13px; font-weight:600; cursor:pointer; color:var(--text); transition:background .12s var(--ease-out), transform .1s var(--ease-out); }
 .dd-panel-float .dd-opt:hover{background:var(--bg-soft);}
+.dd-panel-float .dd-opt:active{background:var(--border-soft); transform:scale(.99);}
 .dd-panel-float .dd-opt .dd-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
 .dd-panel-float .dd-opt.dd-opt-sel{outline:1.5px solid var(--accent); outline-offset:-1.5px;}
 
 /* ── Calendário customizado (identidade visual + animação de abertura) ──── */
-.cal-dd{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); padding:14px; width:250px; animation:panelIn .18s cubic-bezier(.22,.7,.32,1); }
+.cal-dd{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-lg); padding:14px; width:250px; transform-origin:top center; animation:panelIn .22s var(--ease-out); }
 .cal-head{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
-.cal-head button{ background:var(--bg-soft); border:1px solid var(--border); color:var(--text); width:26px; height:26px; border-radius:7px; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; }
+.cal-head button{ background:var(--bg-soft); border:1px solid var(--border); color:var(--text); width:26px; height:26px; border-radius:8px; font-size:13px; font-weight:700; display:flex; align-items:center; justify-content:center; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), transform .12s var(--ease-spring); }
 .cal-head button:hover{background:var(--accent); color:#fff; border-color:var(--accent);}
+.cal-head button:active{transform:scale(.9);}
 .cal-title{ font-size:12.5px; font-weight:800; text-transform:capitalize; }
 .cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
 .cal-dow{ font-size:9.5px; text-align:center; color:var(--text-faint); font-weight:700; padding-bottom:4px; }
-.cal-day{ text-align:center; font-size:12px; font-weight:600; padding:6px 0; border-radius:7px; cursor:pointer; color:var(--text); }
+.cal-day{ text-align:center; font-size:12px; font-weight:600; padding:7px 0; border-radius:8px; cursor:pointer; color:var(--text); transition:background .14s var(--ease-out), color .14s var(--ease-out), transform .12s var(--ease-spring); }
 .cal-day:hover{background:var(--bg-soft);}
+.cal-day:active{transform:scale(.9);}
 .cal-day.cal-muted{color:var(--text-faint); opacity:.45;}
 .cal-day.cal-today{outline:1.5px solid var(--accent-2); outline-offset:-1.5px;}
-.cal-day.cal-selected{background:var(--accent); color:#fff;}
+.cal-day.cal-selected{background:var(--accent); color:#fff; box-shadow:0 2px 8px var(--accent-soft); animation:dayPop .28s var(--ease-spring);}
 .cal-foot{display:flex; justify-content:space-between; margin-top:10px; padding-top:8px; border-top:1px solid var(--border-soft);}
-.cal-foot button{ background:none; border:none; color:var(--text-dim); font-size:11.5px; font-weight:700; padding:4px 6px; }
-.cal-foot button:hover{color:var(--accent);}
+.cal-foot button{ background:none; border:none; color:var(--text-dim); font-size:11.5px; font-weight:700; padding:4px 6px; border-radius:5px; }
+.cal-foot button:hover{color:var(--accent); background:var(--accent-soft);}
 
-.row-actions{display:flex; gap:6px;}
-.icon-btn{ border:1px solid var(--border); background:transparent; color:var(--text-dim); padding:5px 9px; font-size:12px; border-radius:6px; font-weight:600; }
+.row-actions{ text-align:left; }
+.row-actions .icon-btn + .icon-btn{ margin-left:6px; }
+.icon-btn{ border:1px solid var(--border); background:transparent; color:var(--text-dim); padding:5px 9px; font-size:12px; border-radius:var(--r-sm); font-weight:600; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), opacity .15s var(--ease-out), transform .12s var(--ease-spring); }
 .icon-btn:hover{color:#fff; background:var(--accent); border-color:var(--accent);}
+.icon-btn:active{transform:scale(.94);}
 
-.progress-bar{width:90px; height:6px; background:var(--bg-soft); border:1px solid var(--border-soft); border-radius:99px; overflow:hidden;}
-.progress-bar > div{height:100%; background:var(--accent); transition:width .35s cubic-bezier(.22,.7,.32,1);}
+.progress-bar{width:90px; height:8px; background:var(--bg-soft); border:1px solid var(--border-soft); border-radius:99px; overflow:hidden; box-shadow:inset 0 1px 2px rgba(20,24,30,.06);}
+[data-theme="dark"] .progress-bar{ box-shadow:inset 0 1px 2px rgba(0,0,0,.3); }
+.progress-bar > div{height:100%; background:linear-gradient(90deg, var(--accent), var(--accent-3)); transition:width .5s var(--ease-out); border-radius:99px; box-shadow:0 0 8px -1px var(--accent-soft);}
 
 
-.msel-btn{ background:none; border:1px solid transparent; cursor:pointer; padding:6px 8px; border-radius:6px; min-width:130px; width:100%; display:flex; flex-wrap:wrap; gap:4px; text-align:left; font-family:var(--font); }
-.msel-btn:hover{background:var(--bg-soft);}
-.chip{ background:var(--border); color:var(--text); border:1px solid var(--border-soft); border-radius:999px; padding:2px 9px; font-size:11px; font-weight:600; }
-.msel-panel-float{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px; min-width:200px; max-height:280px; overflow-y:auto; box-shadow:var(--shadow); animation:panelIn .16s ease; }
-.msel-panel-float label{ display:flex; align-items:center; gap:8px; padding:5px 4px; font-size:13px; font-weight:500; border-radius:6px; }
+.msel-btn{ background:rgba(20,24,30,.02); border:1px solid var(--border-soft); cursor:pointer; padding:6px 8px; border-radius:var(--r-sm); min-width:130px; width:100%; display:flex; flex-wrap:wrap; gap:4px; text-align:left; font-family:var(--font); transition:background .15s var(--ease-out), border-color .15s var(--ease-out); }
+[data-theme="dark"] .msel-btn{ background:var(--bg-soft); }
+.msel-btn:hover{background:var(--bg-soft); border-color:var(--border);}
+.chip{ background:var(--border); color:var(--text); border:1px solid var(--border-soft); border-radius:999px; padding:3px 10px; font-size:11px; font-weight:600; }
+.msel-panel-float{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:13px; padding:8px; min-width:200px; max-height:280px; overflow-y:auto; box-shadow:var(--shadow-lg); transform-origin:top center; animation:panelIn .2s var(--ease-out); }
+.msel-panel-float label{ display:flex; align-items:center; gap:8px; padding:7px 6px; font-size:13px; font-weight:500; border-radius:8px; transition:background .12s var(--ease-out); }
 .msel-panel-float label:hover{background:var(--bg-soft);}
 
 
 .kpi-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:14px; margin-bottom:26px;}
-.dash-subtabs{ display:flex; gap:4px; background:var(--bg-soft); border:1px solid var(--border); border-radius:9px; padding:3px; }
-.dash-subtab{ background:transparent; border:none; padding:7px 14px; font-size:12px; font-weight:700; color:var(--text-dim); border-radius:7px; }
+.dash-subtabs{ display:flex; gap:4px; background:var(--bg-soft); border:1px solid var(--border); border-radius:10px; padding:3px; }
+
+/* Seletor de mês/ano do dashboard: só ajusta a largura do botão-gatilho
+   genérico (.sel-simple-btn) — o visual e o painel de opções já vêm dele. */
+.dash-period-picker{ min-width:118px; width:auto; }
+.dash-subtab{ background:transparent; border:none; padding:7px 14px; font-size:12px; font-weight:700; color:var(--text-dim); border-radius:8px; transition:background .18s var(--ease-out), color .18s var(--ease-out), box-shadow .18s var(--ease-out), transform .12s var(--ease-spring); }
 .dash-subtab:hover{color:var(--text);}
-.dash-subtab.active{ background:var(--surface); color:var(--text); box-shadow:0 1px 3px rgba(0,0,0,.08); }
-.dash-painel{ animation:viewIn .22s ease; }
-.kpi-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; box-shadow:var(--shadow); }
-.kpi-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); font-weight:700; margin-bottom:8px;}
-.kpi-value{font-size:25px; font-weight:800; font-family:var(--mono);}
+.dash-subtab:active{transform:scale(.97);}
+.dash-subtab.active{ background:var(--surface); color:var(--text); box-shadow:0 2px 6px -1px rgba(20,24,30,.14); }
+.dash-painel{ /* sem animação própria: a troca de aba só alterna display, e uma
+  animação aqui reiniciaria a cada clique, causando a "piscadinha". A entrada
+  do dashboard já é coberta pela animação de #view-root na navegação inicial. */ }
+.kpi-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 20px; box-shadow:var(--shadow); transition:transform .22s var(--ease-out), box-shadow .22s var(--ease-out), border-color .22s var(--ease-out); }
+.kpi-card:hover{ transform:translateY(-3px); box-shadow:var(--shadow-lg); border-color:var(--text-faint); }
+.kpi-label{font-size:10.5px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); font-weight:700; margin-bottom:9px;}
+.kpi-value{font-size:26px; font-weight:800; font-family:var(--mono); letter-spacing:-.01em;}
 .kpi-value .unit{font-size:13px; color:var(--text-faint); font-weight:600;}
-.chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:20px; box-shadow:var(--shadow); }
+.chart-card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:18px 20px; margin-bottom:20px; box-shadow:var(--shadow); }
 .chart-title{font-size:12px; font-weight:700; margin-bottom:14px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em;}
 
-.modal-backdrop{ display:flex; position:fixed; inset:0; background:rgba(20,24,30,.5); z-index:50; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; visibility:hidden; opacity:0; transition:opacity .18s ease, visibility 0s linear .18s; }
+.modal-backdrop{ display:flex; position:fixed; inset:0; background:rgba(15,17,20,.55); backdrop-filter:blur(2px); z-index:50; align-items:flex-start; justify-content:center; padding:40px 16px; overflow:auto; visibility:hidden; opacity:0; transition:opacity .18s ease, visibility 0s linear .18s; }
 .modal-backdrop.active{ visibility:visible; opacity:1; transition:opacity .18s ease; }
-.modal{ background:var(--surface); border-radius:14px; width:100%; max-width:560px; padding:26px 28px; box-shadow:0 20px 60px rgba(0,0,0,.25); transform:scale(.96) translateY(6px); transition:transform .18s ease; max-height:85vh; overflow-y:auto; }
+.modal{ background:var(--surface); border-radius:var(--r-lg); width:100%; max-width:560px; padding:26px 28px; box-shadow:0 24px 70px rgba(0,0,0,.3); transform:scale(.955) translateY(12px); transition:transform .26s var(--ease-spring); max-height:85vh; overflow-y:auto; }
 .modal.modal-wide{ max-width:920px; width:94vw; height:88vh; max-height:88vh; padding:0; display:flex; flex-direction:column; }
 .modal-fixed-head{ flex-shrink:0; padding:24px 30px 18px; border-bottom:1px solid var(--border-soft); }
 .modal-scroll-body{ flex:1; min-height:0; overflow-y:auto; padding:18px 30px; }
 .modal-fixed-foot{ flex-shrink:0; padding:14px 30px; border-top:1px solid var(--border-soft); display:flex; justify-content:flex-end; }
 .modal-backdrop.active .modal{ transform:scale(1) translateY(0); }
-.modal h3{margin:0 0 18px; font-size:16px; font-weight:800;}
+.modal h3{margin:0 0 18px; font-size:16.5px; font-weight:800;}
 .modal-fixed-head h3{margin:0 0 14px;}
 .modal-actions{display:flex; justify-content:flex-end; gap:10px; margin-top:20px;}
 
-.checklist-grupo{ border:1px solid var(--border); border-radius:10px; padding:14px; margin-bottom:14px; background:var(--bg-soft); }
+.checklist-grupo{ border:1px solid var(--border); border-radius:var(--r-lg); padding:16px; margin-bottom:14px; background:var(--bg-soft); transition:border-color .18s var(--ease-out), box-shadow .18s var(--ease-out); }
+.checklist-grupo:hover{ border-color:var(--text-faint); }
 .checklist-grupo-head{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
-.checklist-itens{ margin-top:6px; }
-.checklist-item{ display:flex; align-items:center; gap:10px; padding:8px 4px; border-bottom:1px solid var(--border-soft); font-size:13.5px; cursor:pointer; }
+.checklist-itens{ margin-top:8px; }
+.checklist-item{ display:flex; align-items:center; gap:11px; padding:9px 8px; border-bottom:1px solid var(--border-soft); font-size:13.5px; cursor:pointer; border-radius:8px; transition:background .14s var(--ease-out); }
+.checklist-item:last-child{ border-bottom:none; }
+.checklist-item:hover{ background:var(--surface); }
 .checklist-item.arrastavel{ cursor:grab; }
 .checklist-item.arrastando{ opacity:.4; }
-.checklist-item .arraste-handle{ color:var(--text-faint); cursor:grab; flex-shrink:0; font-size:13px; user-select:none; }
+.checklist-item .arraste-handle{ color:var(--text-faint); cursor:grab; flex-shrink:0; font-size:13px; user-select:none; opacity:.55; transition:opacity .14s var(--ease-out), color .14s var(--ease-out); }
+.checklist-item:hover .arraste-handle{ opacity:1; }
 .checklist-item .arraste-handle:active{ cursor:grabbing; }
-.checklist-item input[type=checkbox]{ width:16px; height:16px; flex-shrink:0; }
+.checklist-item input[type=checkbox]{ width:18px; height:18px; flex-shrink:0; accent-color:var(--accent); cursor:pointer; }
 .checklist-done{ text-decoration:line-through; color:var(--text-faint); }
+/* Botão de excluir de cada item: discreto. Onde há hover real (desktop) ele
+   fica escondido e surge só ao passar o mouse na linha; no toque continua
+   sempre visível pra não ficar inacessível. */
+.checklist-item .icon-btn{ transition:opacity .16s var(--ease-out), background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), transform .12s var(--ease-spring); }
+@media (hover:hover){
+  .checklist-item .icon-btn{ opacity:0; }
+  .checklist-item:hover .icon-btn, .checklist-item .icon-btn:focus-visible{ opacity:1; }
+}
 .img-thumb-wrap{ position:relative; width:96px; height:96px; }
-.img-thumb{ width:96px; height:96px; object-fit:cover; border-radius:8px; border:1px solid var(--border); background:var(--bg-soft); display:block; }
+.img-thumb{ width:96px; height:96px; object-fit:cover; border-radius:10px; border:1px solid var(--border); background:var(--bg-soft); display:block; transition:transform .15s ease, box-shadow .15s ease; }
+.img-thumb:hover{ transform:scale(1.03); box-shadow:var(--shadow); }
 .img-thumb-wrap.img-erro .img-thumb{ display:none; }
-.img-erro-msg{ display:none; width:96px; height:96px; align-items:center; justify-content:center; text-align:center; font-size:9.5px; color:var(--text-faint); background:var(--bg-soft); border:1px dashed var(--border); border-radius:8px; padding:6px; }
+.img-erro-msg{ display:none; width:96px; height:96px; align-items:center; justify-content:center; text-align:center; font-size:9.5px; color:var(--text-faint); background:var(--bg-soft); border:1px dashed var(--border); border-radius:10px; padding:6px; }
 .img-thumb-wrap.img-erro .img-erro-msg{ display:flex; }
-.img-thumb-del{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; border:2px solid var(--surface); font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0; }
-.img-thumb-del:hover{ filter:brightness(1.1); }
+.img-thumb-del{ position:absolute; top:-6px; right:-6px; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff; border:2px solid var(--surface); font-size:13px; line-height:1; display:flex; align-items:center; justify-content:center; padding:0; box-shadow:0 2px 6px rgba(0,0,0,.2); }
+.img-thumb-del:hover{ filter:brightness(1.1); transform:scale(1.08); }
 
-.section-note{ border:1px dashed var(--border); color:var(--text-dim); font-size:12.5px; padding:10px 14px; margin-bottom:16px; border-radius:10px; background:var(--bg-soft); }
-#toast{ position:fixed; bottom:24px; right:24px; background:var(--c-ink); border:1px solid var(--c-ink); color:#fff; padding:12px 18px; font-size:13px; z-index:100; display:none; border-radius:10px; box-shadow:var(--shadow); font-weight:600; }
+.section-note{ border:1px dashed var(--border); color:var(--text-dim); font-size:12.5px; padding:11px 14px; margin-bottom:16px; border-radius:var(--r-lg); background:var(--bg-soft); }
+
+/* Seletor de cor das opções de menu (status/prioridade etc.): troca o
+   quadradinho cru do navegador por um "botão de cor" arredondado, com leve
+   elevação, anel de foco e um pouco mais de respiro — combinando com o
+   resto dos controles do app, sem abrir mão do seletor nativo do sistema. */
+.cor-swatch{
+  -webkit-appearance:none; appearance:none;
+  width:40px; height:36px; flex-shrink:0; padding:0; border:none; cursor:pointer;
+  border-radius:10px; overflow:hidden; background:none;
+  box-shadow:0 0 0 1px var(--border), var(--shadow-sm), inset 0 1px 0 rgba(255,255,255,.14);
+  transition:box-shadow .18s var(--ease-out), transform .12s var(--ease-spring);
+}
+.cor-swatch:hover{ transform:translateY(-1px) scale(1.03); box-shadow:0 0 0 1px var(--text-faint), var(--shadow); }
+.cor-swatch:active{ transform:scale(.96); }
+.cor-swatch:focus-visible{ outline:none; box-shadow:0 0 0 1px var(--accent), var(--ring); }
+.cor-swatch::-webkit-color-swatch-wrapper{ padding:2px; }
+.cor-swatch::-webkit-color-swatch{ border:none; border-radius:8px; }
+.cor-swatch::-moz-color-swatch{ border:none; border-radius:8px; }
+
+#toast{ position:fixed; bottom:24px; right:24px; background:var(--c-ink); border:1px solid var(--c-ink); color:#fff; padding:13px 20px 13px 18px; font-size:13px; z-index:100; display:none; border-radius:11px; box-shadow:var(--shadow-lg); font-weight:600; max-width:340px; }
+#toast::before{ content:'✓'; display:inline-block; margin-right:8px; font-weight:800; }
+#toast.err::before{ content:'!'; }
 #toast.show{display:block;}
 #toast.err{background:#c62828; border-color:#c62828;}
 
 /* Confirmação dentro do app, no lugar do popup do navegador. Fica num
    z-index mais alto que o modal comum pra poder aparecer por cima dele
    quando a exclusão acontece dentro de um painel de detalhes já aberto. */
-.confirm-backdrop{ display:flex; position:fixed; inset:0; background:rgba(20,24,30,.55); z-index:70; align-items:center; justify-content:center; padding:16px; visibility:hidden; opacity:0; transition:opacity .15s ease, visibility 0s linear .15s; }
+.confirm-backdrop{ display:flex; position:fixed; inset:0; background:rgba(15,17,20,.6); backdrop-filter:blur(2px); z-index:70; align-items:center; justify-content:center; padding:16px; visibility:hidden; opacity:0; transition:opacity .15s ease, visibility 0s linear .15s; }
 .confirm-backdrop.active{ visibility:visible; opacity:1; transition:opacity .15s ease; }
-.confirm-box{ background:var(--surface); border-radius:14px; width:100%; max-width:380px; padding:22px 24px; box-shadow:0 20px 60px rgba(0,0,0,.3); transform:scale(.96) translateY(6px); transition:transform .15s ease; }
+.confirm-box{ background:var(--surface); border-radius:var(--r-lg); width:100%; max-width:380px; padding:24px 26px; box-shadow:0 24px 70px rgba(0,0,0,.35); transform:scale(.96) translateY(6px); transition:transform .15s ease; }
 .confirm-backdrop.active .confirm-box{ transform:scale(1) translateY(0); }
 #confirm-mensagem{ font-size:13.5px; color:var(--text-dim); line-height:1.55; }
 
 /* Lightbox — clicar numa imagem do projeto abre ela ampliada */
-.lightbox-backdrop{ display:flex; position:fixed; inset:0; background:rgba(10,12,15,.88); z-index:80; align-items:center; justify-content:center; padding:30px; visibility:hidden; opacity:0; transition:opacity .18s ease, visibility 0s linear .18s; cursor:zoom-out; }
+.lightbox-backdrop{ display:flex; position:fixed; inset:0; background:rgba(8,9,11,.9); z-index:80; align-items:center; justify-content:center; padding:30px; visibility:hidden; opacity:0; transition:opacity .18s ease, visibility 0s linear .18s; cursor:zoom-out; }
 .lightbox-backdrop.active{ visibility:visible; opacity:1; transition:opacity .18s ease; }
-.lightbox-backdrop img{ max-width:100%; max-height:100%; border-radius:10px; box-shadow:0 20px 70px rgba(0,0,0,.5); transform:scale(.96); transition:transform .18s ease; }
+.lightbox-backdrop img{ max-width:100%; max-height:100%; border-radius:12px; box-shadow:0 24px 80px rgba(0,0,0,.55); transform:scale(.96); transition:transform .18s ease; }
 .lightbox-backdrop.active img{ transform:scale(1); }
 .img-thumb{ cursor:zoom-in; }
-::-webkit-scrollbar{height:8px; width:8px;}
+::-webkit-scrollbar{height:9px; width:9px;}
+::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
+::-webkit-scrollbar-thumb:hover{background:var(--text-faint);}
 .diff-old{color:var(--accent); text-decoration:line-through; opacity:.7;}
 .diff-new{color:var(--c-moss); font-weight:700;}
 
 /* ── Animações ───────────────────────────────────────────────────────── */
-@keyframes viewIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
-#view-root.view-anim{ animation:viewIn .28s cubic-bezier(.22,.7,.32,1); }
+/* Entrada de tela: sobe suavemente com um leve "settle" de escala e um fade
+   escalonado, dando sensação de navegação contínua em vez de um corte seco. */
+@keyframes viewIn{
+  0%{ opacity:0; transform:translateY(14px) scale(.992); }
+  60%{ opacity:1; }
+  100%{ opacity:1; transform:translateY(0) scale(1); }
+}
+#view-root.view-anim{ animation:viewIn .42s var(--ease-out); }
 
-@keyframes panelIn{ from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:translateY(0);} }
-/* .msel-panel-float já anima via panelIn na própria definição da classe */
+/* Painéis flutuantes (dropdowns, multiselect, calendário): brotam a partir do
+   topo — crescem em escala e opacidade em vez de só deslizar pra baixo. */
+@keyframes panelIn{
+  0%{ opacity:0; transform:translateY(-8px) scale(.94); }
+  100%{ opacity:1; transform:translateY(0) scale(1); }
+}
 
-@keyframes toastIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
-#toast.show{ animation:toastIn .22s ease; }
+@keyframes toastIn{ from{opacity:0; transform:translateY(14px) scale(.96);} to{opacity:1; transform:translateY(0) scale(1);} }
+#toast.show{ animation:toastIn .34s var(--ease-spring); }
 
-@keyframes kpiIn{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
-.kpi-card, .chart-card{ animation:kpiIn .3s ease both; }
+@keyframes kpiIn{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+.kpi-card, .chart-card{ animation:kpiIn .4s var(--ease-out) both; }
 
-tbody tr{ transition:background .12s ease; }
-.badge, .icon-btn, .btn, .btn-primary, .tab-btn, .theme-toggle .knob{ transition:background .15s ease, color .15s ease, border-color .15s ease, filter .15s ease; }
+/* Card de login: sobe e assenta com leve escala. */
+@keyframes cardIn{ 0%{opacity:0; transform:translateY(18px) scale(.985);} 100%{opacity:1; transform:translateY(0) scale(1);} }
+
+/* Backdrop da gaveta lateral: só um fade limpo. */
+@keyframes backdropIn{ from{opacity:0;} to{opacity:1;} }
+
+/* Dia selecionado no calendário: um leve "pop". */
+@keyframes dayPop{ 0%{transform:scale(.7);} 60%{transform:scale(1.08);} 100%{transform:scale(1);} }
+
+/* Erro de login mantém sua entrada suave. */
+.error-msg:not(:empty){ display:block; animation:panelIn .3s var(--ease-out) both; }
+
+/* Fontes dentro dos SVGs (gráficos do dashboard) herdam a Montserrat. */
+svg text{ font-family:var(--font); }
+
+/* Knob do toggle de tema: desliza com curva viva + transição de cor do trilho.
+   (Regra própria e específica pra não ser sobrescrita por transições genéricas.) */
+.theme-toggle .knob{ transition:left .28s var(--ease-spring), background .2s var(--ease-out); }
+
+/* Respeita quem prefere menos movimento: encurta drasticamente as animações
+   sem desligar o feedback essencial. */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.06s !important;
+    scroll-behavior:auto !important;
+  }
+}
+
+/* Scrollbar fina dentro de painéis flutuantes (dropdowns, calendário) */
+.dd-panel-float::-webkit-scrollbar, .msel-panel-float::-webkit-scrollbar{width:6px;}
 </style>
 </head>
 <body>
@@ -1085,6 +1278,52 @@ function buildSelDropdown({ grupo, valorAtual, onSelect, permitirVazio, boolMap,
   return html;
 }
 
+// Seletor genérico com painel flutuante — troca o <select> nativo (cujo
+// menu de opções é controlado pelo navegador/SO e não dá pra estilizar) por
+// um botão com painel próprio, no mesmo componente visual (.dd-panel-float)
+// usado pelos outros seletores do app. `opcoes`: [{value, label, dot?}].
+// Se `dataAttr` for passado, o valor escolhido também vira um atributo
+// data-* no botão (dá pra estilizar por CSS, ex.: cor por papel de usuário).
+function buildSimplePicker(valorAtual, opcoes, aoSelecionar, { classeExtra='', dataAttr=null, placeholder='—' } = {}){
+  const id = 'sp_' + (++__ddSeq);
+  const rotuloDe = (v)=> (opcoes.find(o=>String(o.value)===String(v))||{}).label ?? placeholder;
+  const attrExtra = dataAttr ? ` data-${dataAttr}="${escapeHtml(String(valorAtual))}"` : '';
+  const html = `<button type="button" class="sel-simple-btn${classeExtra?(' '+classeExtra):''}" id="${id}"${attrExtra}>${escapeHtml(rotuloDe(valorAtual))}</button>`;
+  queueMicrotask(()=>{
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    let atual = valorAtual;
+    btn.addEventListener('click', (e)=>{
+      e.stopPropagation();
+      abrirFlutuante(btn, 'dd-panel-float', (painel, fechar)=>{
+        painel.innerHTML = opcoes.map(o=>`<div class="dd-opt${String(o.value)===String(atual)?' dd-opt-sel':''}" data-v="${escapeHtml(String(o.value))}">${o.dot?`<span class="dd-dot" style="background:${o.dot}"></span>`:''}${escapeHtml(o.label)}</div>`).join('');
+        painel.querySelectorAll('.dd-opt').forEach(opt=>{
+          opt.addEventListener('click', async ()=>{
+            fechar();
+            const novoValor = opt.dataset.v;
+            atual = novoValor;
+            btn.textContent = rotuloDe(novoValor);
+            if (dataAttr) btn.setAttribute('data-'+dataAttr, novoValor);
+            await aoSelecionar(novoValor, btn);
+          });
+        });
+      });
+    });
+  });
+  return html;
+}
+
+// Seletor de papel do usuário — mesma faixa colorida do "role-stamp".
+const ROLE_OPCOES_PICKER = [
+  { value:'usuario', label:'usuário', dot:'var(--text-faint)' },
+  { value:'gestor', label:'gestor', dot:'var(--accent-2)' },
+  { value:'admin', label:'admin', dot:'var(--accent)' },
+];
+function buildRolePicker(valorAtual, aoSelecionar){
+  return buildSimplePicker(valorAtual, ROLE_OPCOES_PICKER, aoSelecionar, { classeExtra:'role-picker', dataAttr:'role' });
+}
+
+
 // Nomes de status considerados "conclusão" (bloqueados se houver checklist
 // pendente). Comparação sem acento/maiúsculas pra pegar variações do texto.
 const STATUS_CONCLUSAO = ['concluido','fechado'];
@@ -1672,13 +1911,14 @@ async function viewOpcoesMenu(){
   if (error) throw error;
 
   const root = document.getElementById('view-root');
+  let grupoAtual = GRUPOS_MENU[0][0];
   root.innerHTML = `
     <div class="toolbar">
       ${currentProfile.role==='admin' ? `<button class="btn" id="btn-abrir-config-visual" type="button">🎨 Ajuste de cor no modo escuro</button>` : ''}
       ${(currentProfile.role==='admin'||currentProfile.role==='gestor') ? `<button class="btn" id="btn-abrir-modelos-checklist" type="button">📋 Modelos de checklist</button>` : ''}
     </div>
     <div class="toolbar">
-      <select id="grupo-filter">${GRUPOS_MENU.map(([g,l])=>`<option value="${g}">${l}</option>`).join('')}</select>
+      <span id="grupo-filter-wrap" style="min-width:220px;">${buildSimplePicker(grupoAtual, GRUPOS_MENU.map(([g,l])=>({value:g,label:l})), (v)=>{ grupoAtual=v; render(grupoAtual); })}</span>
       <div class="spacer"></div>
       <button class="btn btn-primary" id="btn-new-opcao" style="width:auto">+ Nova opção</button>
     </div>
@@ -1703,7 +1943,7 @@ async function viewOpcoesMenu(){
       <tr data-id="${o.id}">
         <td><input type="text" class="cell-input" data-f="valor" value="${escapeHtml(o.valor)}" style="min-width:200px" /></td>
         <td><div style="display:flex;align-items:center;gap:6px;">
-          <input type="color" class="cor-swatch" data-f="cor" value="${o.cor}" style="width:34px;height:32px;border:1px solid var(--border);border-radius:6px;background:none;padding:0;flex-shrink:0;" />
+          <input type="color" class="cor-swatch" data-f="cor" value="${o.cor}" />
           <input type="text" class="cell-input cor-hex" data-f-hex="cor" data-id="${o.id}" value="${escapeHtml(o.cor)}" maxlength="7" style="width:88px;font-family:var(--mono);text-transform:uppercase;" />
         </div></td>
         <td><input type="number" class="cell-number" data-f="ordem" value="${o.ordem}" style="width:64px" /></td>
@@ -1760,23 +2000,21 @@ async function viewOpcoesMenu(){
         if (idx>=0) data.splice(idx,1);
         await loadMenuOpcoes();
         toast('Opção excluída.');
-        render(grupoFilter.value);
+        render(grupoAtual);
       });
     });
   }
 
-  const grupoFilter = document.getElementById('grupo-filter');
-  render(grupoFilter.value);
-  grupoFilter.addEventListener('change', ()=>render(grupoFilter.value));
+  render(grupoAtual);
 
   document.getElementById('btn-new-opcao').addEventListener('click', async ()=>{
-    const grupo = grupoFilter.value;
+    const grupo = grupoAtual;
     const { data: nova, error } = await sb.from('menu_opcoes').insert({ grupo, valor:'Nova opção', cor:'#628852', ordem: 99 }).select().single();
     if (error) return toast('Erro: '+error.message, true);
     data.push(nova);
     await loadMenuOpcoes();
     toast('Opção criada — edite o texto e a cor.');
-    render(grupoFilter.value);
+    render(grupoAtual);
   });
 
   // Atualização silenciosa: refaz a busca e redesenha mantendo o grupo que
@@ -1785,7 +2023,7 @@ async function viewOpcoesMenu(){
     const { data: novosDados, error: err2 } = await sb.from('menu_opcoes').select('*').order('grupo').order('ordem');
     if (err2) return;
     data.length = 0; data.push(...novosDados);
-    render(grupoFilter.value);
+    render(grupoAtual);
   };
 }
 
@@ -1973,6 +2211,7 @@ async function viewUsuarios(){
   if (meuTokenDaTela !== __viewToken) return; // uma navegação mais nova já rolou nesse meio-tempo — não sobrescreve a tela atual
 
   const root = document.getElementById('view-root');
+  let nuRoleEscolhido = 'usuario';
   root.innerHTML = `
     <div class="section-note">O token fica salvo em texto puro — dá pra ver e editar o token atual de qualquer pessoa aqui embaixo.</div>
     <div class="table-wrap" style="margin-bottom:22px;"><table>
@@ -1983,7 +2222,7 @@ async function viewUsuarios(){
     <div class="table-wrap"><table><tbody><tr>
       <td><input type="text" class="cell-input" id="nu-nome" placeholder="Nome completo" style="min-width:160px" /></td>
       <td><input type="text" class="cell-input" id="nu-usuario" placeholder="Usuário" style="min-width:160px" /></td>
-      <td><select class="cell-select" id="nu-role"><option value="usuario">usuario</option><option value="gestor">gestor</option><option value="admin">admin</option></select></td>
+      <td>${buildRolePicker('usuario', (v)=>{ nuRoleEscolhido = v; })}</td>
       <td><input type="text" class="cell-input" id="nu-token" placeholder="Token inicial" style="min-width:140px" /></td>
       <td><button class="btn btn-primary" id="btn-criar-usuario" style="width:auto">Criar</button></td>
     </tr></tbody></table></div>
@@ -1993,7 +2232,11 @@ async function viewUsuarios(){
     <tr data-uid="${p.id}">
       <td>${escapeHtml(p.nome)}</td>
       <td>${escapeHtml(p.usuario)}</td>
-      <td><select class="cell-select role-select">${['usuario','gestor','admin'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}</select></td>
+      <td>${buildRolePicker(p.role, async (v, btn)=>{
+        const { error } = await sb.rpc('atualizar_role', { p_user_id: p.id, p_role: v });
+        if (error) return toast('Erro: '+error.message, true);
+        flashSaved(btn); toast('Papel atualizado.');
+      })}</td>
       <td><input type="text" class="cell-input token-input" value="${escapeHtml(p.token||'')}" style="min-width:150px" /></td>
       <td class="row-actions">
         <button class="icon-btn" data-action="set-token">salvar token</button>
@@ -2004,11 +2247,6 @@ async function viewUsuarios(){
 
   document.querySelectorAll('#tbody tr[data-uid]').forEach(tr=>{
     const uid = tr.dataset.uid;
-    tr.querySelector('.role-select').addEventListener('change', async (e)=>{
-      const { error } = await sb.rpc('atualizar_role', { p_user_id: uid, p_role: e.target.value });
-      if (error) return toast('Erro: '+error.message, true);
-      flashSaved(e.target); toast('Papel atualizado.');
-    });
     tr.querySelector('[data-action="set-token"]').addEventListener('click', async ()=>{
       const tokenInput = tr.querySelector('.token-input');
       if (!tokenInput.value) return toast('Digite um token.', true);
@@ -2027,7 +2265,7 @@ async function viewUsuarios(){
   document.getElementById('btn-criar-usuario').addEventListener('click', async ()=>{
     const nome = document.getElementById('nu-nome').value.trim();
     const usuario = document.getElementById('nu-usuario').value.trim();
-    const role = document.getElementById('nu-role').value;
+    const role = nuRoleEscolhido;
     const token = document.getElementById('nu-token').value;
     if (!nome || !usuario || !token) return toast('Preencha nome, usuário e token.', true);
     const { error } = await sb.rpc('criar_usuario', { p_nome: nome, p_usuario: usuario, p_token: token, p_role: role });
@@ -2832,14 +3070,19 @@ async function viewDashboard(){
         <button type="button" class="dash-subtab active" data-periodo="mes">Mês</button>
         <button type="button" class="dash-subtab" data-periodo="ano">Ano</button>
       </div>
-      <select id="mes-select" style="display:none">${months.map(m=>`<option value="${m}" ${m===thisMonthKey?'selected':''}>${monthLabel(m+'-01')}</option>`).join('')}</select>
-      <select id="ano-select">${anosList.map(a=>`<option value="${a}" ${a===anoAtual?'selected':''}>${a}</option>`).join('')}</select>
+      <span id="mes-select" style="display:none">${buildSimplePicker(thisMonthKey, months.map(m=>({value:m,label:monthLabel(m+'-01')})), (v)=>{ mesSelecionado=v; renderTudo(); }, {classeExtra:'dash-period-picker'})}</span>
+      <span id="ano-select">${buildSimplePicker(anoAtual, anosList.map(a=>({value:a,label:a})), (v)=>{ anoSelecionado=v; renderTudo(); }, {classeExtra:'dash-period-picker'})}</span>
+      ${podeDefinirMetas ? `<button type="button" class="btn" id="btn-definir-metas">🎯 Definir metas</button>` : ''}
     </div>
     <div id="dash-painel-sac" class="dash-painel"></div>
     <div id="dash-painel-vendas" class="dash-painel" style="display:none"></div>
     <div id="dash-painel-projetos" class="dash-painel" style="display:none"></div>
     <div id="dash-painel-anual" class="dash-painel" style="display:none"></div>
   `;
+
+  if (podeDefinirMetas){
+    document.getElementById('btn-definir-metas').addEventListener('click', abrirDefinirMetasPopup);
+  }
 
   const linhasAnual = anosList.map(ano=>{
     const chAno = chamados.filter(r=>(monthKey(r.mes_ref||r.data_abertura)||'').startsWith(ano));
@@ -2998,6 +3241,75 @@ async function viewDashboard(){
     });
   }
 
+  // Painel único pra definir todas as metas (SAC, Vendas, Projetos) de
+  // qualquer mês/ano, sem precisar trocar de aba e caçar o campo certo.
+  // Reaproveita exatamente a mesma lógica de salvar de bindMetaInput — só
+  // muda onde o campo aparece na tela.
+  function abrirDefinirMetasPopup(){
+    if (!podeDefinirMetas) return;
+    const modal = document.getElementById('modal-content');
+    modal.classList.add('modal-wide');
+    let anoEsc = anoAtual;
+    let mesEsc = thisMonthKey;
+
+    function montar(){
+      modal.innerHTML = `
+        <div class="modal-fixed-head">
+          <h3 style="margin-bottom:4px;">🎯 Definir metas</h3>
+          <div style="font-size:12.5px;color:var(--text-dim);">Escolha o mês e defina a meta de cada indicador num só lugar.</div>
+          <div class="toolbar" style="margin:14px 0 0;">
+            <span id="metas-ano-picker"></span>
+            <span id="metas-mes-picker"></span>
+          </div>
+        </div>
+        <div class="modal-scroll-body" id="metas-lista"></div>
+        <div class="modal-fixed-foot"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>
+      `;
+      document.getElementById('metas-ano-picker').innerHTML = buildSimplePicker(anoEsc, anosList.map(a=>({value:a,label:a})), (v)=>{
+        anoEsc = v;
+        const doAno = mesesDoAno(anoEsc);
+        if (!doAno.includes(mesEsc)) mesEsc = doAno.includes(thisMonthKey) ? thisMonthKey : doAno[0];
+        montar();
+      }, { classeExtra:'dash-period-picker' });
+      document.getElementById('metas-mes-picker').innerHTML = buildSimplePicker(mesEsc, mesesDoAno(anoEsc).map(mk=>({value:mk,label:monthLabelCurto(mk+'-01')})), (v)=>{
+        mesEsc = v;
+        renderLista();
+      }, { classeExtra:'dash-period-picker' });
+      renderLista();
+    }
+
+    function renderLista(){
+      const lista = document.getElementById('metas-lista');
+      lista.innerHTML = Object.keys(TIPOS_META).map(tipo=>{
+        const atual = metaDe(tipo, mesEsc);
+        return `<div style="display:flex;align-items:center;gap:12px;padding:14px 4px;border-bottom:1px solid var(--border-soft);">
+          <div style="flex:1;font-size:13px;font-weight:600;">${TIPOS_META[tipo]}</div>
+          <input type="number" step="0.01" class="cell-number meta-modal-input" data-tipo="${tipo}" value="${atual ?? ''}" placeholder="Sem meta" style="width:110px;" />
+        </div>`;
+      }).join('');
+      lista.querySelectorAll('.meta-modal-input').forEach(inp=>{
+        inp.addEventListener('change', async ()=>{
+          const tipo = inp.dataset.tipo, mk = mesEsc;
+          const valor = inp.value === '' ? null : parseFloat(inp.value);
+          if (valor == null){
+            await sb.from('metas').delete().eq('tipo', tipo).eq('mes_ref', mk+'-01');
+          } else {
+            const { error } = await sb.from('metas').upsert({ tipo, mes_ref: mk+'-01', valor_meta: valor }, { onConflict:'tipo,mes_ref' });
+            if (error) return toast('Erro ao salvar meta: '+error.message, true);
+          }
+          const idx = metas.findIndex(m=>m.tipo===tipo && m.mes_ref && m.mes_ref.slice(0,7)===mk);
+          if (idx>=0) metas[idx].valor_meta = valor; else if (valor!=null) metas.push({tipo, mes_ref:mk+'-01', valor_meta:valor});
+          flashSaved(inp);
+          toast('Meta salva.');
+          renderTudo();
+        });
+      });
+    }
+
+    montar();
+    document.getElementById('modal-backdrop').classList.add('active');
+  }
+
   // Cada aba (SAC, Vendas, Projetos) lembra sozinha se está em modo Mês ou
   // Ano. O mês/ano escolhidos no seletor são compartilhados entre as abas
   // que estiverem naquele modo.
@@ -3015,15 +3327,6 @@ async function viewDashboard(){
   }
   renderTudo();
 
-  document.getElementById('mes-select').addEventListener('change', (e)=>{
-    mesSelecionado = e.target.value;
-    renderTudo();
-  });
-  document.getElementById('ano-select').addEventListener('change', (e)=>{
-    anoSelecionado = e.target.value;
-    renderTudo();
-  });
-
   function atualizarControlesPeriodo(){
     const mostrarToggle = abaAtiva !== 'anual';
     document.getElementById('periodo-toggle').style.display = mostrarToggle ? '' : 'none';
@@ -3039,7 +3342,9 @@ async function viewDashboard(){
       periodoTipoPorAba[abaAtiva] = btn.dataset.periodo;
       atualizarControlesPeriodo();
       renderTudo();
-      if (currentSilentRefresh) currentSilentRefresh();
+      // (mesmo motivo do fix na troca de aba SAC/Vendas/Projetos: renderTudo()
+      // já redesenha tudo com os dados que já estão em memória — buscar de
+      // novo aqui só causava a piscadinha.)
     });
   });
 
@@ -3052,7 +3357,10 @@ async function viewDashboard(){
         document.getElementById('dash-painel-'+t).style.display = (t===abaAtiva) ? '' : 'none';
       });
       atualizarControlesPeriodo();
-      if (currentSilentRefresh) currentSilentRefresh();
+      // Trocar de sub-aba só alterna qual painel já renderizado fica visível —
+      // os dados de SAC/Vendas/Projetos já foram carregados no início do
+      // Dashboard, então não há por que buscar tudo de novo aqui. Foi essa
+      // busca+redesenho que causava a "piscadinha" a cada clique na aba.
     });
   });
 
