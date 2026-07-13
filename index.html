@@ -343,6 +343,17 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .checklist-grupo{ border:1px solid var(--border); border-radius:var(--r-lg); padding:16px; margin-bottom:14px; background:var(--bg-soft); transition:border-color .18s var(--ease-out), box-shadow .18s var(--ease-out); }
 .checklist-grupo:hover{ border-color:var(--text-faint); }
 .checklist-grupo-head{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.checklist-toggle{ width:26px; height:26px; padding:0; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; border-radius:7px; opacity:1 !important; }
+.checklist-toggle .chev{ display:inline-block; line-height:1; font-size:13px; transition:transform .3s var(--ease-spring); transform:rotate(0deg); }
+.checklist-grupo.recolhido .checklist-toggle .chev{ transform:rotate(-90deg); }
+.checklist-grupo-dup{ opacity:1 !important; }
+/* Corpo do checklist (itens + campo de novo item): anima com grid-template-rows
+   1fr↔0fr, que é fluido pra qualquer altura de conteúdo sem precisar calcular
+   px em JS. O wrapper interno com overflow:hidden é o que corta o conteúdo
+   durante a transição. */
+.checklist-corpo-wrap{ display:grid; grid-template-rows:1fr; transition:grid-template-rows .32s var(--ease-inout); }
+.checklist-grupo.recolhido .checklist-corpo-wrap{ grid-template-rows:0fr; }
+.checklist-corpo-inner{ overflow:hidden; min-height:0; }
 .checklist-itens{ margin-top:8px; }
 .checklist-item{ display:flex; align-items:center; gap:11px; padding:9px 8px; border-bottom:1px solid var(--border-soft); font-size:13.5px; cursor:pointer; border-radius:8px; transition:background .14s var(--ease-out); }
 .checklist-item:last-child{ border-bottom:none; }
@@ -2807,15 +2818,21 @@ window.abrirDetalhes = async function(tabela, id){
     const pct = progressoGrupo(itens);
     return `<div class="checklist-grupo" data-grupo="${g.id}">
       <div class="checklist-grupo-head">
+        <button type="button" class="icon-btn checklist-toggle" data-toggle-grupo="${g.id}" title="Recolher/Expandir checklist" aria-expanded="true"><span class="chev">▾</span></button>
         <input type="text" class="cell-input checklist-grupo-nome" data-grupo-nome="${g.id}" value="${escapeHtml(g.nome)}" style="font-weight:800;font-size:13.5px;max-width:220px;" />
         <div class="progress-bar" style="width:110px;"><div style="width:${pct}%"></div></div>
         <span class="checklist-grupo-pct" style="font-size:11px;color:var(--text-faint);min-width:32px;">${pct}%</span>
-        <button type="button" class="icon-btn" data-del-grupo="${g.id}" style="margin-left:auto;">excluir checklist</button>
+        <button type="button" class="icon-btn checklist-grupo-dup" data-dup-grupo="${g.id}" style="margin-left:auto;" title="Duplicar este checklist com todos os itens">⧉ Duplicar</button>
+        <button type="button" class="icon-btn" data-del-grupo="${g.id}">excluir checklist</button>
       </div>
-      <div class="checklist-itens" data-grupo-itens="${g.id}">${montarItensHtml(itens)}</div>
-      <div style="display:flex;gap:8px;margin-top:8px;">
-        <input type="text" class="cell-input novo-item" data-grupo-novo="${g.id}" placeholder="Novo item..." style="flex:1;" />
-        <button type="button" class="btn add-item" data-grupo-add="${g.id}" style="width:auto;">+ Item</button>
+      <div class="checklist-corpo-wrap">
+        <div class="checklist-corpo-inner">
+          <div class="checklist-itens" data-grupo-itens="${g.id}">${montarItensHtml(itens)}</div>
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <input type="text" class="cell-input novo-item" data-grupo-novo="${g.id}" placeholder="Novo item..." style="flex:1;" />
+            <button type="button" class="btn add-item" data-grupo-add="${g.id}" style="width:auto;">+ Item</button>
+          </div>
+        </div>
       </div>
     </div>`;
   }
@@ -2944,6 +2961,39 @@ window.abrirDetalhes = async function(tabela, id){
       grupoEl.remove();
       if (!document.querySelector('.checklist-grupo')){
         document.getElementById('detalhe-grupos').innerHTML = '';
+      }
+    });
+
+    const btnToggle = grupoEl.querySelector('[data-toggle-grupo]');
+    btnToggle.addEventListener('click', ()=>{
+      const recolhido = grupoEl.classList.toggle('recolhido');
+      btnToggle.setAttribute('aria-expanded', recolhido ? 'false' : 'true');
+    });
+
+    const btnDup = grupoEl.querySelector('[data-dup-grupo]');
+    btnDup.addEventListener('click', async ()=>{
+      btnDup.disabled = true;
+      try{
+        const grupoOriginal = grupos.find(gr=>gr.id===grupoId);
+        const nomeCopia = (grupoOriginal ? grupoOriginal.nome : 'Checklist') + ' (cópia)';
+        const { data: novoGrupo, error } = await sb.from(cfg.checklistGruposTable).insert({ [cfg.checklistFk]: id, nome: nomeCopia, ordem: (grupos||[]).length }).select().single();
+        if (error) return toast('Erro: '+error.message, true);
+        grupos.push(novoGrupo);
+        const itensOriginais = itensDoGrupo(grupoId);
+        if (itensOriginais.length){
+          const { data: novosItens, error: errItens } = await sb.from(cfg.checklistTable)
+            .insert(itensOriginais.map((it,i)=>({ [cfg.checklistFk]: id, grupo_id: novoGrupo.id, texto: it.texto, concluido: it.concluido, ordem: i })))
+            .select();
+          if (errItens) return toast('Erro: '+errItens.message, true);
+          checklist.push(...(novosItens||[]));
+        }
+        const container = document.getElementById('detalhe-grupos');
+        if (container.querySelector('.section-note')) container.innerHTML = '';
+        container.insertAdjacentHTML('beforeend', montarGrupoHtml(novoGrupo));
+        ligarGrupo(novoGrupo.id);
+        toast('Checklist duplicado.');
+      } finally {
+        btnDup.disabled = false;
       }
     });
   }
@@ -3089,6 +3139,13 @@ function svgGroupedBarChart(labels, series, cores){
   const groupW = areaW / nGroups;
   const barW = Math.max(2, (groupW * 0.82) / nSeries);
   const eixo = svgEixoValores(ticks, maxEixo, padL, padR, padT, areaH, w);
+  // Linha vertical separando cada grupo (cada dia/mês) do próximo, pra ficar
+  // fácil de ver onde um período termina e o outro começa.
+  let separadores = '';
+  for (let gi=1; gi<nGroups; gi++){
+    const xs = padL + gi*groupW;
+    separadores += `<line x1="${xs.toFixed(1)}" y1="${padT}" x2="${xs.toFixed(1)}" y2="${(padT+areaH).toFixed(1)}" stroke="currentColor" stroke-opacity="0.16" stroke-width="1" stroke-dasharray="2,3"/>`;
+  }
   let bars = '', textos = '';
   labels.forEach((lab, gi)=>{
     const gx = padL + gi*groupW + groupW*0.09;
@@ -3103,7 +3160,7 @@ function svgGroupedBarChart(labels, series, cores){
     });
   });
   const legenda = series.map((s,si)=>`<span style="display:inline-flex;align-items:center;gap:5px;margin:0 10px 6px 0;font-size:11px;color:var(--text-dim);"><span style="width:9px;height:9px;border-radius:2px;background:${cores[si%cores.length]};display:inline-block;flex-shrink:0;"></span>${escapeHtml(s.nome)}</span>`).join('');
-  return `<div style="display:flex;flex-wrap:wrap;margin-bottom:8px;">${legenda}</div><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;color:var(--text-dim)">${eixo}${bars}${textos}</svg>`;
+  return `<div style="display:flex;flex-wrap:wrap;margin-bottom:8px;">${legenda}</div><svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;color:var(--text-dim)">${eixo}${separadores}${bars}${textos}</svg>`;
 }
 function corSerie(i){ return `hsl(${(i*61)%360},60%,50%)`; }
 
