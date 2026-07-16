@@ -94,12 +94,28 @@ input,select,textarea{font-family:var(--font);}
 .role-picker[data-role="usuario_industria"]{ border-left-color:var(--accent-4); }
 
 /* Nível de permissão — linha expansível (Usuários > Permissões de abas).
-   Clique no nome da aba revela as subcategorias (checkboxes) por papel. */
+   Clique no nome da aba revela as subcategorias (checkboxes) por papel.
+   Cada aba é um "grupo" (linha principal + subcategorias quando expandida):
+   o grupo ganha fundo mais forte e uma borda no topo pra ficar óbvio onde
+   uma categoria acaba e a próxima começa; as subcategorias ficam recuadas
+   com uma guia vertical ligando à aba-mãe, e a zebra padrão da tabela é
+   desligada aqui pra não brigar visualmente com esse agrupamento. */
+#painel-permissoes tbody tr:nth-child(even){ background:none; }
+#painel-permissoes .perm-aba-row td{
+  background:var(--surface-2);
+  border-top:2px solid var(--border);
+  border-bottom:1px solid var(--border-soft);
+  font-weight:800;
+}
+#painel-permissoes .perm-aba-row:first-child td{ border-top:none; }
+#painel-permissoes .perm-aba-row:hover td{ background:var(--surface-2); box-shadow:none; }
 .perm-toggle{ display:flex; align-items:center; gap:7px; background:none; border:none; cursor:pointer; font:inherit; font-weight:800; font-size:13px; color:var(--text); padding:4px 2px; }
 .perm-toggle .chev{ display:inline-block; font-size:10px; color:var(--text-faint); transition:transform .22s var(--ease-spring); }
 .perm-toggle.aberto .chev{ transform:rotate(90deg); }
-.perm-sub-row td{ background:var(--bg-soft); }
-.perm-sub-row td:first-child{ padding-left:30px; font-size:12px; color:var(--text-dim); }
+#painel-permissoes .perm-sub-row td{ background:var(--bg-soft); border-bottom:1px solid var(--border-soft); }
+#painel-permissoes .perm-sub-row:hover td{ background:var(--bg-soft); box-shadow:none; }
+.perm-sub-row td:first-child{ padding-left:32px; font-size:12px; color:var(--text-dim); border-left:3px solid var(--accent-soft); }
+#painel-permissoes .perm-sub-row-last td{ border-bottom:2px solid var(--border); }
 .perm-check{ width:17px; height:17px; accent-color:var(--accent); cursor:pointer; }
 .perm-check:disabled{ opacity:.55; cursor:not-allowed; }
 
@@ -3105,14 +3121,14 @@ async function montarPainelPermissoes(meuTokenDaTela){
           }
           const acessoCells = PAPEIS.map(r=>celula(r,'acesso')).join('');
           if (!subs.length){
-            return `<tr data-aba="${key}"><td>${escapeHtml(label)}</td>${acessoCells}</tr>`;
+            return `<tr class="perm-aba-row" data-aba="${key}"><td>${escapeHtml(label)}</td>${acessoCells}</tr>`;
           }
           const linhaPrincipal = `<tr class="perm-aba-row" data-aba="${key}">
             <td><button type="button" class="perm-toggle" data-toggle-aba="${key}"><span class="chev">▸</span>${escapeHtml(label)}</button></td>
             ${acessoCells}
           </tr>`;
-          const subLinhas = subs.map(s=>`
-            <tr class="perm-sub-row" data-aba="${key}" style="display:none;">
+          const subLinhas = subs.map((s,i)=>`
+            <tr class="perm-sub-row${i===subs.length-1?' perm-sub-row-last':''}" data-aba="${key}" style="display:none;">
               <td>${escapeHtml(s.label)}</td>
               ${PAPEIS.map(r=>celula(r, s.key)).join('')}
             </tr>
