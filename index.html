@@ -1093,12 +1093,13 @@ function abaTemAlgumAcesso(perm){ return !!(perm && perm.acesso); }
 
 function abasPermitidasPara(role){
   let abas = ABAS_DISPONIVEIS.filter(([key])=> abaTemAlgumAcesso(permissoesPara(key, role)));
-  // Redes de segurança: 1) todo mundo sempre enxerga "Minhas Tarefas", pra
-  // ninguém ficar sem conseguir abrir NENHUMA aba por causa de uma
-  // configuração de permissão incompleta/zerada; 2) admin sempre mantém
-  // acesso a "Usuários", senão ninguém mais mexe nas permissões.
-  if (!abas.some(([key])=>key==='minhas-tarefas')){
-    abas = [ABAS_DISPONIVEIS.find(([key])=>key==='minhas-tarefas'), ...abas];
+  // Redes de segurança: 1) só força "Minhas Tarefas" quando a pessoa ficaria
+  // SEM NENHUMA aba visível (config incompleta/zerada) — se ela já tem
+  // acesso a outra aba, uma negação explícita de "Minhas Tarefas" é
+  // respeitada; 2) admin sempre mantém acesso a "Usuários", senão ninguém
+  // mais mexe nas permissões.
+  if (abas.length === 0){
+    abas = [ABAS_DISPONIVEIS.find(([key])=>key==='minhas-tarefas')];
   }
   if (role === 'admin' && !abas.some(([key])=>key==='usuarios')){
     abas.push(ABAS_DISPONIVEIS.find(([key])=>key==='usuarios'));
