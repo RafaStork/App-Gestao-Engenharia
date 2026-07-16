@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Gestão de Tarefas — Engenharia</title>
-<meta name="description" content="Sistema de gestão de tarefas de Engenharia — SAC, Vendas e Projetos." />
+<title>Gestão de Tarefas — Engenharia &amp; Indústria</title>
+<meta name="description" content="Sistema de gestão de tarefas de Engenharia e Indústria — SAC, Vendas, Projetos e Programação de Carregamento." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -23,6 +23,7 @@
   --c-orange:#E8590C;
   --c-amber:#f9b215;
   --c-blue:#2d5da9;
+  --c-purple:#7C5CBF;
   --c-white:#ffffff;
   --ease: cubic-bezier(.22,.7,.32,1);
   --ease-out: cubic-bezier(.16,.84,.44,1);
@@ -33,9 +34,10 @@
   --bg:#EEF0F2; --bg-soft:#F4F5F7; --surface:#FFFFFF; --surface-2:#FAFBFA;
   --border:#E2E5E9; --border-soft:#EDEFF2; --zebra:rgba(20,24,30,.025);
   --text:var(--c-ink); --text-dim:#5A626C; --text-faint:#9099A3;
-  --accent:var(--c-orange); --accent-2:var(--c-blue); --accent-3:var(--c-amber);
+  --accent:var(--c-orange); --accent-2:var(--c-blue); --accent-3:var(--c-amber); --accent-4:var(--c-purple);
   --accent-soft: rgba(232,89,12,.10);
   --accent-2-soft: rgba(45,93,169,.10);
+  --accent-4-soft: rgba(124,92,191,.10);
   --shadow-sm: 0 1px 2px rgba(20,24,30,.05);
   --shadow: 0 1px 2px rgba(20,24,30,.05), 0 8px 24px rgba(20,24,30,.07);
   --shadow-lg: 0 12px 20px -8px rgba(20,24,30,.10), 0 26px 52px -12px rgba(20,24,30,.16);
@@ -46,9 +48,10 @@
   --bg:#15171B; --bg-soft:#1D2026; --surface:#20242A; --surface-2:#262A31;
   --border:#31363E; --border-soft:#282C33; --zebra:rgba(255,255,255,.025);
   --text:#EDEFF2; --text-dim:#AAB1BC; --text-faint:#6E7683;
-  --accent:#F1783A; --accent-2:#6C9BDB; --accent-3:var(--c-amber);
+  --accent:#F1783A; --accent-2:#6C9BDB; --accent-3:var(--c-amber); --accent-4:#A98AE0;
   --accent-soft: rgba(241,120,58,.16);
   --accent-2-soft: rgba(108,155,219,.16);
+  --accent-4-soft: rgba(169,138,224,.18);
   --shadow-sm: 0 1px 2px rgba(0,0,0,.3);
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px rgba(0,0,0,.32);
   --shadow-lg: 0 12px 22px -8px rgba(0,0,0,.42), 0 28px 54px -12px rgba(0,0,0,.55);
@@ -74,15 +77,31 @@ input,select,textarea{font-family:var(--font);}
 .role-stamp{ display:inline-flex; align-items:center; justify-content:center;
   clip-path:polygon(20% 5%, 80% 5%, 100% 50%, 80% 95%, 20% 95%, 0% 50%);
   font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:6px 12px; color:var(--c-white); }
-.role-admin{background:var(--accent);} .role-gestor{background:var(--accent-2);} .role-usuario{background:var(--text-faint);}
+.role-admin{background:var(--accent);}
+.role-gestor_engenharia{background:var(--accent-2);}
+.role-usuario_engenharia_sac{background:var(--text-faint);}
+.role-gestor_industria{background:var(--accent-3); color:var(--c-ink);}
+.role-usuario_industria{background:var(--accent-4);}
 
 /* Seletor de papel do usuário (Usuários > Papel, e criação de usuário): uma
    faixa lateral colorida — igual à paleta do "role-stamp" — dá pra ver de
    longe qual papel está selecionado sem precisar ler o texto do <select>. */
 .role-picker{ border-left:4px solid var(--text-faint); font-weight:700; min-width:130px; transition:border-left-color .18s var(--ease-out), border-color .18s var(--ease-out), box-shadow .18s var(--ease-out); }
 .role-picker[data-role="admin"]{ border-left-color:var(--accent); }
-.role-picker[data-role="gestor"]{ border-left-color:var(--accent-2); }
-.role-picker[data-role="usuario"]{ border-left-color:var(--text-faint); }
+.role-picker[data-role="gestor_engenharia"]{ border-left-color:var(--accent-2); }
+.role-picker[data-role="usuario_engenharia_sac"]{ border-left-color:var(--text-faint); }
+.role-picker[data-role="gestor_industria"]{ border-left-color:var(--accent-3); }
+.role-picker[data-role="usuario_industria"]{ border-left-color:var(--accent-4); }
+
+/* Nível de permissão (Editar tudo / Ver tudo / Ver só o próprio / Sem acesso)
+   — mesmo componente visual do role-picker, cores neutras próprias pra não
+   confundir com o "papel" ao lado. */
+.nivel-picker{ border-left:4px solid var(--text-faint); font-weight:700; font-size:11.5px; min-width:150px; padding:6px 10px; }
+.nivel-picker[data-nivel="editar_tudo"]{ border-left-color:var(--c-moss); }
+.nivel-picker[data-nivel="ver_tudo"]{ border-left-color:var(--accent-2); }
+.nivel-picker[data-nivel="ver_proprio"]{ border-left-color:var(--accent-3); }
+.nivel-picker[data-nivel="nenhum"]{ border-left-color:var(--text-faint); opacity:.6; }
+.perm-cell{ display:flex; align-items:center; justify-content:center; gap:6px; }
 
 #login-screen{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; background:
   radial-gradient(1100px 550px at 15% 0%, var(--accent-soft), transparent 60%),
@@ -384,6 +403,30 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 
 .section-note{ border:1px dashed var(--border); color:var(--text-dim); font-size:12.5px; padding:11px 14px; margin-bottom:16px; border-radius:var(--r-lg); background:var(--bg-soft); }
 
+/* ── Calendário de Programação de Carregamento ─────────────────────────── */
+.cal-toolbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.cal-nav-btn{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--surface); border:1px solid var(--border); color:var(--text); font-size:14px; display:flex; align-items:center; justify-content:center; transition:background .15s var(--ease-out), border-color .15s var(--ease-out), transform .12s var(--ease-spring); }
+.cal-nav-btn:hover{ background:var(--bg-soft); border-color:var(--text-faint); }
+.cal-nav-btn:active{ transform:scale(.92); }
+.cal-titulo{ font-size:16px; font-weight:800; min-width:170px; text-transform:capitalize; }
+.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; animation:cardIn .32s var(--ease-out) both; }
+.cal-cabecalho{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); text-align:center; padding:4px 0 8px; }
+.cal-dia{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); min-height:104px; padding:8px; display:flex; flex-direction:column; gap:5px; cursor:pointer; transition:border-color .16s var(--ease-out), box-shadow .16s var(--ease-out), transform .12s var(--ease-spring); }
+.cal-dia:hover{ border-color:var(--accent); box-shadow:var(--shadow); transform:translateY(-2px); }
+.cal-dia.fora-mes{ opacity:.38; }
+.cal-dia.hoje{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-soft); }
+.cal-dia-num{ font-size:12px; font-weight:800; color:var(--text-dim); }
+.cal-dia.hoje .cal-dia-num{ color:var(--accent); }
+.cal-agendamentos{ display:flex; flex-direction:column; gap:4px; overflow:hidden; }
+.cal-chip{ font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:6px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 1px rgba(0,0,0,.14); box-shadow:0 1px 2px rgba(0,0,0,.10); animation:cardIn .22s var(--ease-out) both; }
+.cal-chip-mais{ font-size:10px; color:var(--text-faint); font-weight:700; padding:2px 4px; }
+.cal-dia-add{ margin-top:auto; align-self:flex-end; font-size:16px; line-height:1; color:var(--text-faint); opacity:0; transition:opacity .14s var(--ease-out), color .14s var(--ease-out); }
+@media (hover:hover){ .cal-dia:hover .cal-dia-add{ opacity:1; color:var(--accent); } }
+@media (hover:none){ .cal-dia-add{ opacity:1; } }
+.cal-agend-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border-soft); border-radius:10px; margin-bottom:8px; background:var(--bg-soft); transition:border-color .14s var(--ease-out); }
+.cal-agend-item:hover{ border-color:var(--text-faint); }
+.cal-agend-cor{ width:8px; height:34px; border-radius:4px; flex-shrink:0; }
+
 /* Seletor de cor das opções de menu (status/prioridade etc.): um "botão de
    cor" arredondado que abre um seletor visual próprio (abaixo), em vez do
    color-picker cru do navegador/SO. */
@@ -507,7 +550,7 @@ svg text{ font-family:var(--font); }
   <div class="login-card">
     <div class="login-head">
       <img class="brand-logo" id="login-logo" alt="321 Modular" />
-      <div><div class="brand-eyebrow">Engenharia</div><div class="brand-title">Gestão de Tarefas</div></div>
+      <div><div class="brand-eyebrow">Engenharia &amp; Indústria</div><div class="brand-title">Gestão de Tarefas</div></div>
     </div>
     <form id="login-form">
       <div class="field"><label>Usuário</label><input type="text" id="login-usuario" required autocomplete="username" /></div>
@@ -740,7 +783,7 @@ async function bootAfterLogin(){
   document.getElementById('app-shell').classList.add('active');
   document.getElementById('user-name').textContent = currentProfile.nome;
   const stamp = document.getElementById('user-role-stamp');
-  stamp.textContent = currentProfile.role;
+  stamp.textContent = ROTULO_PAPEL[currentProfile.role] || currentProfile.role;
   stamp.className = 'role-stamp role-' + currentProfile.role;
 
   await loadMenuOpcoes();
@@ -748,7 +791,7 @@ async function bootAfterLogin(){
   await loadPermissoesAbas();
   buildNav();
   const abasPermitidas = abasPermitidasPara(currentProfile.role).map(([key])=>key);
-  const preferida = currentProfile.role === 'usuario' ? 'minhas-tarefas' : 'dashboard';
+  const preferida = currentProfile.role.startsWith('usuario') ? 'minhas-tarefas' : 'dashboard';
   const firstView = abasPermitidas.includes(preferida) ? preferida : (abasPermitidas[0] || 'minhas-tarefas');
   navigateTo(firstView);
 }
@@ -886,38 +929,86 @@ const ABAS_DISPONIVEIS = [
   ['chamados','Chamados SAC'],
   ['projetos','Projetos'],
   ['vendas','Vendas / Expansão'],
+  ['programacao-carregamento','Programação Carregamento'],
+  ['sac-industria','SAC ↔ Indústria'],
   ['opcoes-menu','Opções dos Menus'],
   ['usuarios','Usuários'],
   ['auditoria','Auditoria'],
 ];
-const PAPEIS = ['admin','gestor','usuario'];
-const NAV_ITEMS_PADRAO = {
-  admin:   ['dashboard','minhas-tarefas','chamados','projetos','vendas','opcoes-menu','usuarios','auditoria'],
-  gestor:  ['dashboard','minhas-tarefas','chamados','projetos','vendas','auditoria'],
-  usuario: ['minhas-tarefas'],
+
+// Cargos do sistema. "engenharia" cobre o time de Engenharia (e SAC, no caso
+// do usuário), "industria" cobre o time de Indústria (programação de
+// carregamento e as reclamações que o SAC registra pra Indústria resolver).
+const PAPEIS = ['admin','gestor_engenharia','usuario_engenharia_sac','gestor_industria','usuario_industria'];
+const ROTULO_PAPEL = {
+  admin: 'Admin',
+  gestor_engenharia: 'Gestor Engenharia',
+  usuario_engenharia_sac: 'Usuário Engenharia e SAC',
+  gestor_industria: 'Gestor Indústria',
+  usuario_industria: 'Usuário Indústria',
 };
-let permissoesAbas = null; // preenchido por loadPermissoesAbas(); null = ainda não carregado (usa padrão)
+const NAV_ITEMS_PADRAO = {
+  admin:                  ['dashboard','minhas-tarefas','chamados','projetos','vendas','programacao-carregamento','sac-industria','opcoes-menu','usuarios','auditoria'],
+  gestor_engenharia:      ['dashboard','minhas-tarefas','chamados','projetos','vendas','sac-industria','auditoria'],
+  usuario_engenharia_sac: ['minhas-tarefas','chamados','sac-industria'],
+  gestor_industria:       ['dashboard','minhas-tarefas','programacao-carregamento','sac-industria','auditoria'],
+  usuario_industria:      ['minhas-tarefas','programacao-carregamento'],
+};
+
+// Níveis de permissão configuráveis por papel x aba (menu "mais
+// configurações" da tela Usuários). 'nenhum' esconde a aba do menu lateral;
+// os outros três controlam o que a pessoa pode fazer dentro dela.
+const NIVEIS_PERMISSAO = [
+  { value:'nenhum',       label:'Sem acesso' },
+  { value:'ver_proprio',  label:'Visualizar só o designado ao próprio usuário' },
+  { value:'ver_tudo',     label:'Visualizar cadastro de todos' },
+  { value:'editar_tudo',  label:'Editar cadastro de todos' },
+];
+function nivelPadraoDe(role, aba){
+  return (NAV_ITEMS_PADRAO[role]||[]).includes(aba) ? 'editar_tudo' : 'nenhum';
+}
+
+let permissoesAbas = null; // preenchido por loadPermissoesAbas(); mapa[role][aba] = nivel
 
 async function loadPermissoesAbas(){
   const { data, error } = await sb.from('permissoes_abas').select('*');
   if (error || !data || !data.length){ permissoesAbas = null; return; }
   const mapa = {};
-  PAPEIS.forEach(r=>mapa[r] = new Set());
-  data.forEach(row=>{ if (row.permitido && mapa[row.role]) mapa[row.role].add(row.aba); });
+  PAPEIS.forEach(r=>{ mapa[r] = {}; });
+  data.forEach(row=>{
+    if (!mapa[row.role]) return;
+    // Compatível com o formato antigo (coluna booleana "permitido") e com o
+    // novo formato (coluna "nivel"): se "nivel" vier preenchido, ele manda;
+    // senão cai pro booleano de sempre (permitido -> editar_tudo).
+    mapa[row.role][row.aba] = row.nivel || (row.permitido ? 'editar_tudo' : 'nenhum');
+  });
   permissoesAbas = mapa;
 }
 
-function abasPermitidasPara(role){
-  if (permissoesAbas && permissoesAbas[role]){
-    const abas = ABAS_DISPONIVEIS.filter(([key])=>permissoesAbas[role].has(key));
-    // Rede de segurança: admin sempre enxerga "Usuários", senão ninguém
-    // consegue mais mexer nas permissões se alguém desmarcar essa aba por engano.
-    if (role === 'admin' && !abas.some(([key])=>key==='usuarios')){
-      abas.push(ABAS_DISPONIVEIS.find(([key])=>key==='usuarios'));
-    }
-    return abas;
+// Nível de permissão do papel informado (ou do usuário logado, se omitido)
+// pra uma aba específica. Sempre retorna um dos NIVEIS_PERMISSAO.
+function nivelPermissaoPara(aba, role){
+  role = role || (currentProfile && currentProfile.role);
+  if (permissoesAbas && permissoesAbas[role] && permissoesAbas[role][aba] !== undefined){
+    return permissoesAbas[role][aba];
   }
-  return ABAS_DISPONIVEIS.filter(([key])=>(NAV_ITEMS_PADRAO[role]||[]).includes(key));
+  return nivelPadraoDe(role, aba);
+}
+function nivelPermissaoAtual(aba){ return nivelPermissaoPara(aba); }
+// true pra admin e pra qualquer papel de gestor (Engenharia ou Indústria).
+function ehGestorOuAdmin(role){
+  role = role || (currentProfile && currentProfile.role) || '';
+  return role === 'admin' || role.startsWith('gestor');
+}
+
+function abasPermitidasPara(role){
+  const abas = ABAS_DISPONIVEIS.filter(([key])=> nivelPermissaoPara(key, role) !== 'nenhum');
+  // Rede de segurança: admin sempre enxerga "Usuários", senão ninguém
+  // consegue mais mexer nas permissões se alguém desmarcar essa aba por engano.
+  if (role === 'admin' && !abas.some(([key])=>key==='usuarios')){
+    abas.push(ABAS_DISPONIVEIS.find(([key])=>key==='usuarios'));
+  }
+  return abas;
 }
 
 function buildNav(){
@@ -959,6 +1050,8 @@ async function navigateTo(key, opts){
     else if (key==='chamados') await viewTabela('chamados_sac');
     else if (key==='projetos') await viewTabela('projetos');
     else if (key==='vendas') await viewTabela('vendas_expansao');
+    else if (key==='programacao-carregamento') await viewProgramacaoCarregamento();
+    else if (key==='sac-industria') await viewTabela('reclamacoes_industria');
     else if (key==='opcoes-menu') await viewOpcoesMenu();
     else if (key==='usuarios') await viewUsuarios();
     else if (key==='auditoria') await viewAuditoria();
@@ -983,6 +1076,7 @@ async function saveField(table, id, field, value){
 const TABLE_CONFIG = {
   chamados_sac: {
     title: 'Chamados SAC', sub: 'Registro e acompanhamento dos chamados de atendimento.',
+    aba: 'chamados',
     respTable: 'chamados_sac_responsaveis', respFk: 'chamado_id', detalhavel: true,
     fields: [
       {key:'numero_chamado', label:'Nº', edit:'text', w:70, readonly:true},
@@ -999,6 +1093,7 @@ const TABLE_CONFIG = {
   },
   projetos: {
     title: 'Projetos', sub: 'Projetos de engenharia em andamento e planejados.',
+    aba: 'projetos',
     respTable: 'projetos_responsaveis', respFk: 'projeto_id', detalhavel: true,
     fields: [
       {key:'projeto', label:'Projeto', edit:'text', w:220},
@@ -1013,8 +1108,24 @@ const TABLE_CONFIG = {
       {key:'percentual_conclusao', label:'% Concl.', edit:'percent'},
     ],
   },
+  reclamacoes_industria: {
+    title: 'SAC ↔ Indústria', sub: 'Reclamações de franqueados registradas pelo SAC para a Indústria resolver.',
+    aba: 'sac-industria',
+    respTable: 'reclamacoes_industria_responsaveis', respFk: 'reclamacao_id', detalhavel: true,
+    fields: [
+      {key:'numero_reclamacao', label:'Nº', edit:'text', w:70, readonly:true},
+      {key:'franquia', label:'Franquia', edit:'select', group:'chamados_franquia'},
+      {key:'motivo', label:'Motivo', edit:'select', group:'sacind_motivo'},
+      {key:'descricao', label:'Descrição', edit:'textarea', w:220},
+      {key:'data_abertura', label:'Abertura', edit:'date'},
+      {key:'data_resolucao', label:'Resolução', edit:'date'},
+      {key:'responsaveis', label:'Responsáveis', edit:'multiselect'},
+      {key:'status', label:'Status', edit:'select', group:'sacind_status'},
+    ],
+  },
   vendas_expansao: {
     title: 'Vendas / Expansão', sub: 'Vendas de franquias e metragem.',
+    aba: 'vendas',
     fields: [
       {key:'numero_venda', label:'Nº Venda', edit:'text', w:70, readonly:true},
       {key:'data_venda', label:'Data', edit:'date'},
@@ -1023,7 +1134,33 @@ const TABLE_CONFIG = {
       {key:'observacoes', label:'Observações', edit:'text', w:220},
     ],
   },
+  agendamentos_carregamento: {
+    title: 'Programação Carregamento', sub: 'Carregamentos agendados por franquia.',
+    aba: 'programacao-carregamento',
+    fields: [
+      {key:'data', label:'Data', edit:'date'},
+      {key:'hora', label:'Hora', edit:'text', w:70},
+      {key:'franquia', label:'Franquia', edit:'select', group:'chamados_franquia'},
+      {key:'observacoes', label:'Observações', edit:'textarea', w:220},
+      {key:'status', label:'Status', edit:'select', group:'carregamento_status'},
+    ],
+  },
 };
+
+// Nível de permissão do usuário logado pra uma TABELA (usa o mapeamento
+// tabela -> aba do TABLE_CONFIG). Ex.: nivelPermissaoTabela('projetos').
+function nivelPermissaoTabela(tableName){
+  const aba = (TABLE_CONFIG[tableName]||{}).aba;
+  return aba ? nivelPermissaoAtual(aba) : 'nenhum';
+}
+// Um registro é "do próprio usuário" se ele criou (criado_por) ou está entre
+// os responsáveis/atribuídos dele. Usado pelo nível "ver_proprio".
+function registroEhDoProprio(row){
+  if (!row) return false;
+  if (row.criado_por && row.criado_por === currentUser.id) return true;
+  if (Array.isArray(row.__resp_ids) && row.__resp_ids.includes(currentUser.id)) return true;
+  return false;
+}
 
 function renderSelectCell(table, row, field){
   return buildSelDropdown({
@@ -1485,9 +1622,11 @@ function buildSimplePicker(valorAtual, opcoes, aoSelecionar, { classeExtra='', d
 
 // Seletor de papel do usuário — mesma faixa colorida do "role-stamp".
 const ROLE_OPCOES_PICKER = [
-  { value:'usuario', label:'usuário', dot:'var(--text-faint)' },
-  { value:'gestor', label:'gestor', dot:'var(--accent-2)' },
-  { value:'admin', label:'admin', dot:'var(--accent)' },
+  { value:'usuario_engenharia_sac', label:'Usuário Engenharia e SAC', dot:'var(--text-faint)' },
+  { value:'gestor_engenharia', label:'Gestor Engenharia', dot:'var(--accent-2)' },
+  { value:'usuario_industria', label:'Usuário Indústria', dot:'var(--accent-4)' },
+  { value:'gestor_industria', label:'Gestor Indústria', dot:'var(--accent-3)' },
+  { value:'admin', label:'Admin', dot:'var(--accent)' },
 ];
 function buildRolePicker(valorAtual, aoSelecionar){
   return buildSimplePicker(valorAtual, ROLE_OPCOES_PICKER, aoSelecionar, { classeExtra:'role-picker', dataAttr:'role' });
@@ -1521,8 +1660,10 @@ async function viewTabela(tableName){
   const cfg = TABLE_CONFIG[tableName];
   document.getElementById('page-title').textContent = cfg.title;
   document.getElementById('page-sub').textContent = cfg.sub;
-  const canWrite = currentProfile.role === 'admin' || currentProfile.role === 'gestor'
-    || (currentProfile.role === 'usuario' && (tableName==='chamados_sac' || tableName==='vendas_expansao'));
+  const nivel = nivelPermissaoTabela(tableName);
+  // 'editar_tudo' e 'ver_proprio' liberam edição (a 2ª só nas linhas do
+  // próprio usuário, checado célula a célula abaixo); 'ver_tudo' é só leitura.
+  const canWrite = nivel === 'editar_tudo' || nivel === 'ver_proprio';
 
   await loadProfilesCache();
 
@@ -1628,7 +1769,7 @@ async function viewTabela(tableName){
     tbody.innerHTML = rows.map(r=>{
       const cells = cfg.fields.map(f=>{
         const editavel = canWrite && !f.readonly
-          && !(tableName==='vendas_expansao' && currentProfile.role==='usuario' && r.criado_por!==currentUser.id);
+          && !(nivel === 'ver_proprio' && !registroEhDoProprio(r));
         const content = editavel ? renderCell(tableName, r, f)
           : (f.edit==='select' ? statusBadgeGeneric(f.group, f.boolMap ? (r[f.key]?'Sim':'Nao') : r[f.key])
              : f.edit==='multiselect' ? (profilesCache.filter(p=>(r.__resp_ids||[]).includes(p.id)).map(p=>p.nome).join(', ') || '—')
@@ -1638,11 +1779,7 @@ async function viewTabela(tableName){
         return `<td${cls}>${content}</td>`;
       }).join('');
       const detalhesCell = cfg.detalhavel ? `<td class="row-actions"><button class="icon-btn" onclick="abrirDetalhes('${tableName}','${r.id}')">detalhes</button></td>` : '';
-      let podeExcluir = currentProfile.role === 'admin' || currentProfile.role === 'gestor';
-      if (!podeExcluir && currentProfile.role === 'usuario'){
-        if (tableName === 'chamados_sac') podeExcluir = true; // já só vê os seus, por RLS
-        if (tableName === 'vendas_expansao') podeExcluir = (r.criado_por === currentUser.id); // agora vê de todo mundo, só apaga a própria
-      }
+      let podeExcluir = nivel === 'editar_tudo' || (nivel === 'ver_proprio' && registroEhDoProprio(r));
       const actions = canWrite ? `<td class="row-actions">${podeExcluir ? `<button class="icon-btn" onclick="deleteRow('${tableName}','${r.id}')">excluir</button>` : ''}</td>` : '';
       return `<tr>${detalhesCell}${cells}${actions}</tr>`;
     }).join('');
@@ -1753,7 +1890,7 @@ async function viewTabela(tableName){
         if (f.edit==='percent') defaults[f.key]=0;
         if (f.edit==='text' && !f.readonly) defaults[f.key]='Novo — clique para editar';
       });
-      if (tableName==='vendas_expansao') defaults.criado_por = currentUser.id;
+      if (tableName==='vendas_expansao' || tableName==='reclamacoes_industria' || tableName==='agendamentos_carregamento') defaults.criado_por = currentUser.id;
       let novoId = null;
       let novaLinha = null;
       if (tableName==='chamados_sac'){
@@ -1817,6 +1954,148 @@ window.deleteRow = async function(tableName, id){
   toast('Registro excluído.');
   navigateTo(currentView);
 };
+
+// ── Programação Carregamento (calendário) ──────────────────────────────────
+const MESES_CAL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const DIAS_SEMANA_CAL = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+function pad2(n){ return String(n).padStart(2,'0'); }
+function isoLocal(y,m,d){ return `${y}-${pad2(m+1)}-${pad2(d)}`; }
+
+async function viewProgramacaoCarregamento(){
+  document.getElementById('page-title').textContent = 'Programação Carregamento';
+  document.getElementById('page-sub').textContent = 'Calendário de carregamentos agendados, cada um designado a uma franquia.';
+
+  const nivel = nivelPermissaoTabela('agendamentos_carregamento');
+  const canWrite = nivel === 'editar_tudo' || nivel === 'ver_proprio';
+
+  const { data, error } = await sb.from('agendamentos_carregamento').select('*').order('data').order('hora');
+  if (error) throw error;
+  const dados = nivel === 'ver_proprio' ? data.filter(r=>registroEhDoProprio(r)) : data;
+
+  const hoje = new Date();
+  const state = { ano: hoje.getFullYear(), mes: hoje.getMonth() };
+
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="section-note">Clique em um dia pra ver ou agendar carregamentos. Cada carregamento é designado a uma franquia específica.</div>
+    <div class="cal-toolbar">
+      <button type="button" class="cal-nav-btn" id="cal-prev" title="Mês anterior">‹</button>
+      <div class="cal-titulo" id="cal-titulo"></div>
+      <button type="button" class="cal-nav-btn" id="cal-next" title="Próximo mês">›</button>
+      <button type="button" class="btn" id="cal-btn-hoje" style="width:auto">Hoje</button>
+      <div class="spacer"></div>
+    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  `;
+
+  function renderGrid(){
+    document.getElementById('cal-titulo').textContent = `${MESES_CAL[state.mes]} ${state.ano}`;
+    const primeiroDoMes = new Date(state.ano, state.mes, 1);
+    const inicioGrid = new Date(state.ano, state.mes, 1 - primeiroDoMes.getDay());
+    const hojeStr = isoLocal(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    let html = DIAS_SEMANA_CAL.map(d=>`<div class="cal-cabecalho">${d}</div>`).join('');
+    for (let i=0;i<42;i++){
+      const d = new Date(inicioGrid); d.setDate(inicioGrid.getDate()+i);
+      const iso = isoLocal(d.getFullYear(), d.getMonth(), d.getDate());
+      const foraMes = d.getMonth() !== state.mes;
+      const doDia = dados.filter(r=>r.data===iso).sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
+      const max = 3;
+      const chips = doDia.slice(0,max).map(r=>{
+        const cor = corDaOpcao('chamados_franquia', r.franquia) || '#7f9a72';
+        return `<div class="cal-chip" style="background:${corMenuParaTema(cor)};color:${textoParaCorDeMenu(cor)}" title="${escapeHtml(r.franquia||'')}">${r.hora?escapeHtml(r.hora)+' · ':''}${escapeHtml(r.franquia||'Sem franquia')}</div>`;
+      }).join('');
+      const mais = doDia.length>max ? `<div class="cal-chip-mais">+${doDia.length-max} mais</div>` : '';
+      html += `<div class="cal-dia${foraMes?' fora-mes':''}${iso===hojeStr?' hoje':''}" data-dia="${iso}">
+        <div class="cal-dia-num">${d.getDate()}</div>
+        <div class="cal-agendamentos">${chips}${mais}</div>
+        ${canWrite?'<div class="cal-dia-add">+ agendar</div>':''}
+      </div>`;
+    }
+    const grid = document.getElementById('cal-grid');
+    grid.innerHTML = html;
+    grid.querySelectorAll('.cal-dia').forEach(el=>{
+      el.addEventListener('click', ()=> abrirDiaCarregamento(el.dataset.dia));
+    });
+  }
+
+  function abrirDiaCarregamento(iso){
+    const modal = document.getElementById('modal-content');
+    modal.classList.remove('modal-wide');
+    const [ano, mes, dia] = iso.split('-');
+    function montarLista(){
+      const doDia = dados.filter(r=>r.data===iso).sort((a,b)=>String(a.hora||'').localeCompare(String(b.hora||'')));
+      if (!doDia.length) return `<div class="section-note">Nenhum carregamento agendado neste dia.</div>`;
+      return doDia.map(r=>{
+        const cor = corDaOpcao('chamados_franquia', r.franquia) || '#7f9a72';
+        const podeExcluirItem = nivel==='editar_tudo' || (nivel==='ver_proprio' && registroEhDoProprio(r));
+        return `<div class="cal-agend-item" data-id="${r.id}">
+          <div class="cal-agend-cor" style="background:${corMenuParaTema(cor)}"></div>
+          <div style="flex:1;">
+            <div style="font-weight:800;font-size:13px;">${escapeHtml(r.franquia||'Sem franquia')}${r.hora?' · '+escapeHtml(r.hora):''}</div>
+            ${r.observacoes ? `<div style="font-size:12px;color:var(--text-dim);">${escapeHtml(r.observacoes)}</div>` : ''}
+            ${r.status ? `<div style="margin-top:4px;">${statusBadgeGeneric('carregamento_status', r.status)}</div>` : ''}
+          </div>
+          ${podeExcluirItem?`<button type="button" class="icon-btn" data-del="${r.id}">excluir</button>`:''}
+        </div>`;
+      }).join('');
+    }
+    modal.innerHTML = `
+      <h3>Carregamentos — ${dia}/${mes}/${ano}</h3>
+      <div id="cal-dia-lista">${montarLista()}</div>
+      ${canWrite ? `
+      <h3 style="font-size:13.5px;margin:18px 0 10px;">+ Agendar carregamento</h3>
+      <div class="field"><label>Franquia</label><div id="novo-franquia-wrap"></div></div>
+      <div class="field"><label>Hora</label><input type="text" class="cell-input" id="novo-hora" placeholder="Ex.: 08:30" /></div>
+      <div class="field"><label>Observações</label><textarea class="cell-input" id="novo-obs" rows="2"></textarea></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal()">Fechar</button>
+        <button class="btn btn-primary" id="btn-agendar" style="width:auto">Agendar</button>
+      </div>
+      ` : `<div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>`}
+    `;
+    document.getElementById('modal-backdrop').classList.add('active');
+
+    function ligarExcluir(){
+      modal.querySelectorAll('[data-del]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          if (!(await confirmarAcao('Excluir este agendamento?'))) return;
+          const { error: errDel } = await sb.from('agendamentos_carregamento').delete().eq('id', btn.dataset.del);
+          if (errDel) return toast('Erro: '+errDel.message, true);
+          const idx = dados.findIndex(x=>x.id===btn.dataset.del);
+          if (idx>-1) dados.splice(idx,1);
+          toast('Agendamento excluído.');
+          document.getElementById('cal-dia-lista').innerHTML = montarLista();
+          ligarExcluir();
+          renderGrid();
+        });
+      });
+    }
+    ligarExcluir();
+
+    if (canWrite){
+      let franquiaEscolhida = '';
+      document.getElementById('novo-franquia-wrap').innerHTML = buildSimplePicker('', opcoesDe('chamados_franquia').map(o=>({value:o.valor, label:o.valor, dot:corMenuParaTema(o.cor)})), (v)=>{ franquiaEscolhida = v; }, { placeholder:'Selecione a franquia' });
+      document.getElementById('btn-agendar').addEventListener('click', async ()=>{
+        if (!franquiaEscolhida) return toast('Escolha a franquia.', true);
+        const registro = { data: iso, hora: document.getElementById('novo-hora').value.trim()||null, franquia: franquiaEscolhida, observacoes: document.getElementById('novo-obs').value.trim()||null, criado_por: currentUser.id };
+        const { data: novo, error: errIns } = await sb.from('agendamentos_carregamento').insert(registro).select().single();
+        if (errIns) return toast('Erro ao agendar: '+errIns.message, true);
+        dados.push(novo);
+        toast('Carregamento agendado.');
+        document.getElementById('cal-dia-lista').innerHTML = montarLista();
+        ligarExcluir();
+        renderGrid();
+        document.getElementById('novo-hora').value = '';
+        document.getElementById('novo-obs').value = '';
+      });
+    }
+  }
+
+  renderGrid();
+  document.getElementById('cal-prev').addEventListener('click', ()=>{ state.mes--; if (state.mes<0){ state.mes=11; state.ano--; } renderGrid(); });
+  document.getElementById('cal-next').addEventListener('click', ()=>{ state.mes++; if (state.mes>11){ state.mes=0; state.ano++; } renderGrid(); });
+  document.getElementById('cal-btn-hoje').addEventListener('click', ()=>{ state.ano = hoje.getFullYear(); state.mes = hoje.getMonth(); renderGrid(); });
+}
 
 const CAMPOS_MINHAS_TAREFAS = [
   {key:'projeto', label:'Projeto', tipo:'texto'},
@@ -2077,6 +2356,9 @@ const GRUPOS_MENU = [
   ['projetos_nivel_esforco','Projetos — Nível de Esforço'],
   ['projetos_status','Projetos — Status'],
   ['vendas_loja','Vendas — Loja'],
+  ['sacind_motivo','SAC ↔ Indústria — Motivo'],
+  ['sacind_status','SAC ↔ Indústria — Status'],
+  ['carregamento_status','Programação Carregamento — Status'],
 ];
 
 async function viewOpcoesMenu(){
@@ -2091,7 +2373,7 @@ async function viewOpcoesMenu(){
   root.innerHTML = `
     <div class="toolbar">
       ${currentProfile.role==='admin' ? `<button class="btn" id="btn-abrir-config-visual" type="button">🎨 Ajuste de cor no modo escuro</button>` : ''}
-      ${(currentProfile.role==='admin'||currentProfile.role==='gestor') ? `<button class="btn" id="btn-abrir-modelos-checklist" type="button">📋 Modelos de checklist</button>` : ''}
+      ${ehGestorOuAdmin() ? `<button class="btn" id="btn-abrir-modelos-checklist" type="button">📋 Modelos de checklist</button>` : ''}
     </div>
     <div class="toolbar">
       <span id="grupo-filter-wrap" style="min-width:220px;">${buildSimplePicker(grupoAtual, GRUPOS_MENU.map(([g,l])=>({value:g,label:l})), (v)=>{ grupoAtual=v; render(grupoAtual); })}</span>
@@ -2107,7 +2389,7 @@ async function viewOpcoesMenu(){
   if (currentProfile.role==='admin'){
     document.getElementById('btn-abrir-config-visual').addEventListener('click', abrirConfigVisualPopup);
   }
-  if (currentProfile.role==='admin'||currentProfile.role==='gestor'){
+  if (ehGestorOuAdmin()){
     document.getElementById('btn-abrir-modelos-checklist').addEventListener('click', abrirModelosChecklistPopup);
   }
 
@@ -2397,96 +2679,127 @@ async function viewUsuarios(){
   if (error) throw error;
   if (meuTokenDaTela !== __viewToken) return; // uma navegação mais nova já rolou nesse meio-tempo — não sobrescreve a tela atual
 
+  // Nível configurado pra esta pessoa na aba "Usuários": controla se ela vê
+  // o cadastro de todo mundo, só o próprio, e se pode editar/criar/excluir.
+  const nivel = nivelPermissaoAtual('usuarios');
+  const podeEditar = nivel === 'editar_tudo';
+  const dadosVisiveis = nivel === 'ver_proprio' ? data.filter(p=>p.id===currentUser.id) : data;
+
   const root = document.getElementById('view-root');
-  let nuRoleEscolhido = 'usuario';
+  let nuRoleEscolhido = 'usuario_engenharia_sac';
   root.innerHTML = `
+    ${nivel==='ver_proprio' ? `<div class="section-note">Seu nível de permissão nesta aba mostra só o seu próprio cadastro.</div>` : ''}
+    ${nivel==='ver_tudo' ? `<div class="section-note">Seu nível de permissão nesta aba é só de visualização — você vê o cadastro de todos, mas não pode editar.</div>` : ''}
     <div class="section-note">O token fica salvo em texto puro — dá pra ver e editar o token atual de qualquer pessoa aqui embaixo.</div>
     <div class="table-wrap" style="margin-bottom:22px;"><table>
       <thead><tr><th>Nome</th><th>Usuário</th><th>Papel</th><th>Token</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
+    ${podeEditar ? `
     <h3 style="font-size:15px;font-weight:800;margin-bottom:12px;">+ Criar novo usuário</h3>
     <div class="table-wrap"><table><tbody><tr>
       <td><input type="text" class="cell-input" id="nu-nome" placeholder="Nome completo" style="min-width:160px" /></td>
       <td><input type="text" class="cell-input" id="nu-usuario" placeholder="Usuário" style="min-width:160px" /></td>
-      <td>${buildRolePicker('usuario', (v)=>{ nuRoleEscolhido = v; })}</td>
+      <td>${buildRolePicker('usuario_engenharia_sac', (v)=>{ nuRoleEscolhido = v; })}</td>
       <td><input type="text" class="cell-input" id="nu-token" placeholder="Token inicial" style="min-width:140px" /></td>
       <td><button class="btn btn-primary" id="btn-criar-usuario" style="width:auto">Criar</button></td>
     </tr></tbody></table></div>
+    ` : ''}
   `;
 
-  document.getElementById('tbody').innerHTML = data.map(p=>`
+  document.getElementById('tbody').innerHTML = dadosVisiveis.map(p=>`
     <tr data-uid="${p.id}">
       <td>${escapeHtml(p.nome)}</td>
       <td>${escapeHtml(p.usuario)}</td>
-      <td>${buildRolePicker(p.role, async (v, btn)=>{
+      <td>${podeEditar ? buildRolePicker(p.role, async (v, btn)=>{
         const { error } = await sb.rpc('atualizar_role', { p_user_id: p.id, p_role: v });
         if (error) return toast('Erro: '+error.message, true);
         flashSaved(btn); toast('Papel atualizado.');
-      })}</td>
-      <td><input type="text" class="cell-input token-input" value="${escapeHtml(p.token||'')}" style="min-width:150px" /></td>
+      }) : `<span class="role-stamp role-${p.role}">${escapeHtml(ROTULO_PAPEL[p.role]||p.role)}</span>`}</td>
+      <td>${podeEditar ? `<input type="text" class="cell-input token-input" value="${escapeHtml(p.token||'')}" style="min-width:150px" />` : '••••••'}</td>
       <td class="row-actions">
-        <button class="icon-btn" data-action="set-token">salvar token</button>
-        <button class="icon-btn" data-action="excluir">excluir</button>
+        ${podeEditar ? `<button class="icon-btn" data-action="set-token">salvar token</button><button class="icon-btn" data-action="excluir">excluir</button>` : ''}
       </td>
     </tr>
   `).join('');
 
-  document.querySelectorAll('#tbody tr[data-uid]').forEach(tr=>{
-    const uid = tr.dataset.uid;
-    tr.querySelector('[data-action="set-token"]').addEventListener('click', async ()=>{
-      const tokenInput = tr.querySelector('.token-input');
-      if (!tokenInput.value) return toast('Digite um token.', true);
-      const { error } = await sb.rpc('definir_token', { p_user_id: uid, p_novo_token: tokenInput.value });
-      if (error) return toast('Erro: '+error.message, true);
-      flashSaved(tokenInput); toast('Token atualizado com sucesso.');
+  if (podeEditar){
+    document.querySelectorAll('#tbody tr[data-uid]').forEach(tr=>{
+      const uid = tr.dataset.uid;
+      tr.querySelector('[data-action="set-token"]').addEventListener('click', async ()=>{
+        const tokenInput = tr.querySelector('.token-input');
+        if (!tokenInput.value) return toast('Digite um token.', true);
+        const { error } = await sb.rpc('definir_token', { p_user_id: uid, p_novo_token: tokenInput.value });
+        if (error) return toast('Erro: '+error.message, true);
+        flashSaved(tokenInput); toast('Token atualizado com sucesso.');
+      });
+      tr.querySelector('[data-action="excluir"]').addEventListener('click', async ()=>{
+        if (!(await confirmarAcao('Excluir este usuário? Essa ação não pode ser desfeita.'))) return;
+        const { error } = await sb.rpc('excluir_usuario', { p_user_id: uid });
+        if (error) return toast('Erro: '+error.message, true);
+        toast('Usuário excluído.'); navigateTo('usuarios');
+      });
     });
-    tr.querySelector('[data-action="excluir"]').addEventListener('click', async ()=>{
-      if (!(await confirmarAcao('Excluir este usuário? Essa ação não pode ser desfeita.'))) return;
-      const { error } = await sb.rpc('excluir_usuario', { p_user_id: uid });
+
+    document.getElementById('btn-criar-usuario').addEventListener('click', async ()=>{
+      const nome = document.getElementById('nu-nome').value.trim();
+      const usuario = document.getElementById('nu-usuario').value.trim();
+      const role = nuRoleEscolhido;
+      const token = document.getElementById('nu-token').value;
+      if (!nome || !usuario || !token) return toast('Preencha nome, usuário e token.', true);
+      const { error } = await sb.rpc('criar_usuario', { p_nome: nome, p_usuario: usuario, p_token: token, p_role: role });
       if (error) return toast('Erro: '+error.message, true);
-      toast('Usuário excluído.'); navigateTo('usuarios');
+      toast('Usuário criado.'); navigateTo('usuarios');
     });
-  });
-
-  document.getElementById('btn-criar-usuario').addEventListener('click', async ()=>{
-    const nome = document.getElementById('nu-nome').value.trim();
-    const usuario = document.getElementById('nu-usuario').value.trim();
-    const role = nuRoleEscolhido;
-    const token = document.getElementById('nu-token').value;
-    if (!nome || !usuario || !token) return toast('Preencha nome, usuário e token.', true);
-    const { error } = await sb.rpc('criar_usuario', { p_nome: nome, p_usuario: usuario, p_token: token, p_role: role });
-    if (error) return toast('Erro: '+error.message, true);
-    toast('Usuário criado.'); navigateTo('usuarios');
-  });
-
-  try{
-    await montarPainelPermissoes(meuTokenDaTela);
-  }catch(err){
-    console.error('Erro ao montar painel de permissões:', err);
   }
+
+  if (podeEditar){
+    try{
+      await montarPainelPermissoes(meuTokenDaTela);
+    }catch(err){
+      console.error('Erro ao montar painel de permissões:', err);
+    }
+  }
+}
+
+// Constrói o seletor de nível de permissão (mesmo componente visual do
+// role-picker) usado em cada célula da tabela "Permissões de abas por papel".
+function buildNivelPicker(valorAtual, aoSelecionar, desabilitado){
+  if (desabilitado){
+    return `<span class="sel-simple-btn nivel-picker" data-nivel="${valorAtual}" style="opacity:.7;pointer-events:none;">${escapeHtml(NIVEIS_PERMISSAO.find(n=>n.value===valorAtual).label)}</span>`;
+  }
+  return buildSimplePicker(valorAtual, NIVEIS_PERMISSAO, aoSelecionar, { classeExtra:'nivel-picker', dataAttr:'nivel' });
 }
 
 async function montarPainelPermissoes(meuTokenDaTela){
   const { data: permData, error: permErr } = await sb.from('permissoes_abas').select('*');
   if (permErr){ console.error(permErr); return; }
   if (meuTokenDaTela !== __viewToken) return; // a pessoa já saiu dessa tela antes disso terminar de carregar
-  const atual = {}; // atual[role][aba] = true/false
-  PAPEIS.forEach(r=>{ atual[r] = {}; ABAS_DISPONIVEIS.forEach(([key])=>{ atual[r][key] = (NAV_ITEMS_PADRAO[r]||[]).includes(key); }); });
-  (permData||[]).forEach(row=>{ if (atual[row.role]) atual[row.role][row.aba] = !!row.permitido; });
+  const atual = {}; // atual[role][aba] = nivel
+  PAPEIS.forEach(r=>{ atual[r] = {}; ABAS_DISPONIVEIS.forEach(([key])=>{ atual[r][key] = nivelPadraoDe(r, key); }); });
+  (permData||[]).forEach(row=>{
+    if (!atual[row.role]) return;
+    atual[row.role][row.aba] = row.nivel || (row.permitido ? 'editar_tudo' : 'nenhum');
+  });
+
+  const escolhas = {}; // escolhas[role][aba] = nivel escolhido nesta sessão (antes de salvar)
+  PAPEIS.forEach(r=>{ escolhas[r] = { ...atual[r] }; });
 
   const root = document.getElementById('view-root');
   const painel = document.createElement('div');
   painel.innerHTML = `
     <h3 style="font-size:15px;font-weight:800;margin:26px 0 12px;">Permissões de abas por papel</h3>
-    <div class="section-note">Marque quais abas cada papel enxerga no menu lateral. O papel <b>admin</b> sempre mantém acesso a "Usuários", pra ninguém ficar trancado fora desta tela.</div>
-    <div class="table-wrap" style="margin-bottom:22px;"><table>
-      <thead><tr><th>Aba</th><th style="text-align:center">Admin</th><th style="text-align:center">Gestor</th><th style="text-align:center">Usuário</th></tr></thead>
+    <div class="section-note">Pra cada aba e papel, escolha o nível de acesso: <b>Sem acesso</b> esconde a aba do menu; <b>Visualizar só o designado ao próprio usuário</b> mostra apenas os registros do próprio usuário (ou o próprio cadastro, na aba Usuários); <b>Visualizar cadastro de todos</b> é leitura sem edição; <b>Editar cadastro de todos</b> libera controle completo. O papel <b>admin</b> sempre mantém "Editar cadastro de todos" em "Usuários", pra ninguém ficar trancado fora desta tela.</div>
+    <div class="table-wrap" style="margin-bottom:22px; overflow:visible;"><table>
+      <thead><tr><th>Aba</th>${PAPEIS.map(r=>`<th style="text-align:center">${escapeHtml(ROTULO_PAPEL[r])}</th>`).join('')}</tr></thead>
       <tbody>
         ${ABAS_DISPONIVEIS.map(([key,label])=>`
           <tr data-aba="${key}">
             <td>${escapeHtml(label)}</td>
-            ${PAPEIS.map(r=>`<td style="text-align:center"><input type="checkbox" class="perm-check" data-role="${r}" data-aba="${key}" ${atual[r][key]?'checked':''} ${(r==='admin' && key==='usuarios')?'disabled':''} /></td>`).join('')}
+            ${PAPEIS.map(r=>{
+              const travado = (r==='admin' && key==='usuarios');
+              return `<td class="perm-cell" data-role="${r}" data-aba="${key}">${buildNivelPicker(atual[r][key], (v)=>{ escolhas[r][key] = v; }, travado)}</td>`;
+            }).join('')}
           </tr>
         `).join('')}
       </tbody>
@@ -2499,8 +2812,8 @@ async function montarPainelPermissoes(meuTokenDaTela){
     const linhas = [];
     ABAS_DISPONIVEIS.forEach(([key])=>{
       PAPEIS.forEach(r=>{
-        const permitido = (r==='admin' && key==='usuarios') ? true : root.querySelector(`.perm-check[data-role="${r}"][data-aba="${key}"]`).checked;
-        linhas.push({ role:r, aba:key, permitido });
+        const nivel = (r==='admin' && key==='usuarios') ? 'editar_tudo' : escolhas[r][key];
+        linhas.push({ role:r, aba:key, nivel, permitido: nivel !== 'nenhum' });
       });
     });
     const { error } = await sb.from('permissoes_abas').upsert(linhas, { onConflict:'role,aba' });
@@ -2768,6 +3081,15 @@ const DETALHE_CONFIG = {
     respTable: 'chamados_sac_responsaveis', respFk: 'chamado_id',
     checklistGruposTable: 'chamados_checklist_grupos', checklistTable: 'chamados_checklist', checklistFk: 'chamado_id',
     imagensTable: 'chamados_imagens', imagensFk: 'chamado_id',
+    campoDescricao: 'descricao_detalhada',
+    campoTipoTemplate: 'motivo', rotuloTipoTemplate: 'Motivo',
+  },
+  reclamacoes_industria: {
+    campoTitulo: 'numero_reclamacao', tituloGenerico: 'Reclamação',
+    statusGrupo: 'sacind_status', campoPrazo: 'data_resolucao',
+    respTable: 'reclamacoes_industria_responsaveis', respFk: 'reclamacao_id',
+    checklistGruposTable: 'reclamacoes_industria_checklist_grupos', checklistTable: 'reclamacoes_industria_checklist', checklistFk: 'reclamacao_id',
+    imagensTable: 'reclamacoes_industria_imagens', imagensFk: 'reclamacao_id',
     campoDescricao: 'descricao_detalhada',
     campoTipoTemplate: 'motivo', rotuloTipoTemplate: 'Motivo',
   },
@@ -3212,7 +3534,7 @@ const TIPOS_META_MEDIA = new Set(['sac_nps']); // metas onde o valor anual é um
 async function viewDashboard(){
   document.getElementById('page-title').textContent = 'Dashboard';
   document.getElementById('page-sub').textContent = 'Resumo de chamados, projetos e vendas — por mês ou por ano.';
-  const podeDefinirMetas = currentProfile.role === 'admin' || currentProfile.role === 'gestor';
+  const podeDefinirMetas = ehGestorOuAdmin();
 
   const [chamadosRes, projetosRes, vendasRes, metasRes] = await Promise.all([
     sb.from('chamados_sac').select('mes_ref, data_abertura, nota_nps, tempo_resolucao_dias, status, franquia'),
