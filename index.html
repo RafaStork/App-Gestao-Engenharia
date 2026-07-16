@@ -94,28 +94,15 @@ input,select,textarea{font-family:var(--font);}
 .role-picker[data-role="usuario_industria"]{ border-left-color:var(--accent-4); }
 
 /* Nível de permissão — linha expansível (Usuários > Permissões de abas).
-   Clique no nome da aba revela as subcategorias (checkboxes) por papel.
-   Cada aba é um "grupo" (linha principal + subcategorias quando expandida):
-   o grupo ganha fundo mais forte e uma borda no topo pra ficar óbvio onde
-   uma categoria acaba e a próxima começa; as subcategorias ficam recuadas
-   com uma guia vertical ligando à aba-mãe, e a zebra padrão da tabela é
-   desligada aqui pra não brigar visualmente com esse agrupamento. */
-#painel-permissoes tbody tr:nth-child(even){ background:none; }
-#painel-permissoes .perm-aba-row td{
-  background:var(--surface-2);
-  border-top:2px solid var(--border);
-  border-bottom:1px solid var(--border-soft);
-  font-weight:800;
-}
-#painel-permissoes .perm-aba-row:first-child td{ border-top:none; }
-#painel-permissoes .perm-aba-row:hover td{ background:var(--surface-2); box-shadow:none; }
+   Clique no nome da aba revela as subcategorias (checkboxes) por papel. */
 .perm-toggle{ display:flex; align-items:center; gap:7px; background:none; border:none; cursor:pointer; font:inherit; font-weight:800; font-size:13px; color:var(--text); padding:4px 2px; }
 .perm-toggle .chev{ display:inline-block; font-size:10px; color:var(--text-faint); transition:transform .22s var(--ease-spring); }
 .perm-toggle.aberto .chev{ transform:rotate(90deg); }
-#painel-permissoes .perm-sub-row td{ background:var(--bg-soft); border-bottom:1px solid var(--border-soft); }
-#painel-permissoes .perm-sub-row:hover td{ background:var(--bg-soft); box-shadow:none; }
-.perm-sub-row td:first-child{ padding-left:32px; font-size:12px; color:var(--text-dim); border-left:3px solid var(--accent-soft); }
-#painel-permissoes .perm-sub-row-last td{ border-bottom:2px solid var(--border); }
+.perm-sub-row td{ background:var(--bg-soft); padding:0 !important; }
+.perm-sub-row td:first-child{ font-size:12px; color:var(--text-dim); }
+.perm-sub-inner{ overflow:hidden; max-height:0; opacity:0; padding:0 14px; transition:max-height .3s var(--ease-inout), opacity .2s var(--ease-out), padding .26s var(--ease-inout); }
+.perm-sub-inner.centralizado{ display:flex; align-items:center; justify-content:center; }
+.perm-sub-row.aberto .perm-sub-inner{ max-height:54px; opacity:1; padding:9px 14px; }
 .perm-check{ width:17px; height:17px; accent-color:var(--accent); cursor:pointer; }
 .perm-check:disabled{ opacity:.55; cursor:not-allowed; }
 
@@ -441,7 +428,9 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .pcarg-dia.pcarg-especial .pcarg-dia-num{ color:#c0392b; }
 .pcarg-dia-tag{ font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:#c0392b; border-radius:5px; padding:1px 5px; margin-left:6px; vertical-align:middle; }
 .pcarg-agendamentos{ display:flex; flex-direction:column; gap:4px; overflow:hidden; }
-.pcarg-chip{ font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:6px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 1px rgba(0,0,0,.14); box-shadow:0 1px 2px rgba(0,0,0,.10); animation:cardIn .22s var(--ease-out) both; }
+.pcarg-chip{ display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:6px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 1px rgba(0,0,0,.14); box-shadow:0 1px 2px rgba(0,0,0,.10); animation:cardIn .22s var(--ease-out) both; }
+.pcarg-chip-status{ width:7px; height:7px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 1.5px rgba(255,255,255,.65); }
+.pcarg-chip-texto{ overflow:hidden; text-overflow:ellipsis; }
 .pcarg-chip-mais{ font-size:10px; color:var(--text-faint); font-weight:700; padding:2px 4px; }
 .pcarg-dia-add{ margin-top:auto; align-self:flex-end; font-size:16px; line-height:1; color:var(--text-faint); opacity:0; transition:opacity .14s var(--ease-out), color .14s var(--ease-out); }
 @media (hover:hover){ .pcarg-dia:hover .pcarg-dia-add{ opacity:1; color:var(--accent); } }
@@ -487,6 +476,26 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .cp-rgb-input:focus{ outline:none; border-color:var(--accent); box-shadow:var(--ring); }
 .cp-rgb-field label{ font-size:10px; text-transform:uppercase; letter-spacing:.06em; color:var(--text-dim); font-weight:700; }
 .cp-actions{ display:flex; justify-content:flex-end; gap:8px; }
+
+/* Campo de hora: input digitável + botão de relógio ao lado. */
+.hora-field-wrap{ display:inline-flex; align-items:center; gap:5px; }
+.hora-clock-btn{ width:32px; height:32px; flex-shrink:0; border-radius:9px; background:var(--surface); border:1px solid var(--border); color:var(--text-dim); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .15s var(--ease-out), border-color .15s var(--ease-out), transform .12s var(--ease-spring); }
+.hora-clock-btn:hover{ background:var(--bg-soft); border-color:var(--text-faint); color:var(--accent); }
+.hora-clock-btn:active{ transform:scale(.92); }
+
+/* Painel do relógio de ponteiro — mesmo container/animação do seletor de
+   cor, com um mostrador circular de 24h (marcas a cada 30min) por dentro. */
+.clock-picker-float{ position:fixed; z-index:200; background:var(--surface); border:1px solid var(--border); border-radius:16px; box-shadow:var(--shadow-lg); padding:18px; width:264px; transform-origin:top center; animation:panelIn .2s var(--ease-out); }
+.clock-readout{ text-align:center; font-family:var(--mono); font-size:19px; font-weight:800; color:var(--text); margin:0 auto 16px; letter-spacing:.03em; background:var(--bg-soft); border:1px solid var(--border-soft); border-radius:10px; padding:8px 0; width:112px; }
+.clock-face{ position:relative; margin:0 auto 18px; border-radius:50%; background:radial-gradient(circle at 50% 42%, var(--surface) 0%, var(--bg-soft) 100%); box-shadow:inset 0 0 0 1px var(--border-soft), inset 0 2px 10px rgba(0,0,0,.05); cursor:grab; touch-action:none; }
+.clock-face:active{ cursor:grabbing; }
+.clock-tick{ position:absolute; background:var(--text-faint); border-radius:2px; opacity:.55; }
+.clock-tick-hora{ background:var(--text-dim); opacity:.85; }
+.clock-num{ position:absolute; transform:translate(-50%,-50%); width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:var(--text-dim); pointer-events:none; }
+.clock-num-destaque{ color:#fff; background:var(--accent); border-radius:50%; box-shadow:0 2px 6px var(--accent-soft); }
+.clock-hand{ position:absolute; left:50%; top:50%; width:3px; height:76px; background:linear-gradient(to top, var(--accent-2), var(--accent)); border-radius:3px; transform-origin:bottom center; transform:translate(-50%,-100%) rotate(0deg); transition:transform .22s var(--ease-spring); pointer-events:none; box-shadow:0 1px 3px rgba(0,0,0,.15); }
+.clock-hand-tip{ position:absolute; left:50%; top:0; margin:-7.5px 0 0 -7.5px; width:15px; height:15px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft), 0 2px 5px rgba(0,0,0,.2); }
+.clock-center-dot{ position:absolute; left:50%; top:50%; width:13px; height:13px; margin:-6.5px; border-radius:50%; background:var(--accent); box-shadow:0 0 0 4px var(--surface), 0 0 0 5px var(--border-soft); pointer-events:none; z-index:2; }
 
 #toast{ position:fixed; bottom:24px; right:24px; background:var(--c-ink); border:1px solid var(--c-ink); color:#fff; padding:13px 20px 13px 18px; font-size:13px; z-index:100; display:none; border-radius:11px; box-shadow:var(--shadow-lg); font-weight:600; max-width:340px; }
 #toast::before{ content:'✓'; display:inline-block; margin-right:8px; font-weight:800; }
@@ -1109,13 +1118,12 @@ function abaTemAlgumAcesso(perm){ return !!(perm && perm.acesso); }
 
 function abasPermitidasPara(role){
   let abas = ABAS_DISPONIVEIS.filter(([key])=> abaTemAlgumAcesso(permissoesPara(key, role)));
-  // Redes de segurança: 1) só força "Minhas Tarefas" quando a pessoa ficaria
-  // SEM NENHUMA aba visível (config incompleta/zerada) — se ela já tem
-  // acesso a outra aba, uma negação explícita de "Minhas Tarefas" é
-  // respeitada; 2) admin sempre mantém acesso a "Usuários", senão ninguém
-  // mais mexe nas permissões.
-  if (abas.length === 0){
-    abas = [ABAS_DISPONIVEIS.find(([key])=>key==='minhas-tarefas')];
+  // Redes de segurança: 1) todo mundo sempre enxerga "Minhas Tarefas", pra
+  // ninguém ficar sem conseguir abrir NENHUMA aba por causa de uma
+  // configuração de permissão incompleta/zerada; 2) admin sempre mantém
+  // acesso a "Usuários", senão ninguém mais mexe nas permissões.
+  if (!abas.some(([key])=>key==='minhas-tarefas')){
+    abas = [ABAS_DISPONIVEIS.find(([key])=>key==='minhas-tarefas'), ...abas];
   }
   if (role === 'admin' && !abas.some(([key])=>key==='usuarios')){
     abas.push(ABAS_DISPONIVEIS.find(([key])=>key==='usuarios'));
@@ -1468,6 +1476,112 @@ function abrirSeletorDeCor(trigger, corAtual, aoSalvar){
       const hexFinal = rgbParaHex(r,g,b);
       fechar();
       aoSalvar(hexFinal);
+    });
+  });
+}
+
+// Relógio de ponteiro — mostrador circular de 24h com marcas a cada 30
+// minutos. Arrasta (ou clica direto num ponto) pra girar o ponteiro; ele
+// sempre encaixa no meia-hora mais próxima. `aoSalvar(valor)` só é chamado
+// ao clicar em "Definir".
+function abrirRelogioPicker(trigger, valorAtual, aoSalvar){
+  const partes = String(valorAtual||'').split(':');
+  let h = parseInt(partes[0], 10); if (isNaN(h) || h<0 || h>23) h = 12;
+  let m = parseInt(partes[1], 10); m = (!isNaN(m) && m>=30) ? 30 : 0;
+
+  abrirFlutuante(trigger, 'clock-picker-float', (painel, fechar)=>{
+    const tam = 228, centro = tam/2, raio = 100;
+    let marcasHtml = '';
+    for (let i=0;i<48;i++){
+      const angDeg = i*7.5;
+      const rad = (angDeg-90)*Math.PI/180;
+      const ehHora = i%2===0;
+      const rMarca = raio - (ehHora?8:5.5);
+      const x = centro + rMarca*Math.cos(rad), y = centro + rMarca*Math.sin(rad);
+      const largura = ehHora?3:2, altura = ehHora?12:7;
+      marcasHtml += `<div class="clock-tick${ehHora?' clock-tick-hora':''}" style="left:${x}px;top:${y}px;width:${largura}px;height:${altura}px;transform:translate(-50%,-50%) rotate(${angDeg}deg);"></div>`;
+    }
+    let numsHtml = '';
+    [0,6,12,18].forEach(hCard=>{
+      const angDeg = (hCard*2)*7.5;
+      const rad = (angDeg-90)*Math.PI/180;
+      const rNum = raio - 24;
+      const x = centro + rNum*Math.cos(rad), y = centro + rNum*Math.sin(rad);
+      numsHtml += `<div class="clock-num" data-num-hora="${hCard}" style="left:${x}px;top:${y}px;">${pad2(hCard)}</div>`;
+    });
+    painel.innerHTML = `
+      <div class="clock-readout" id="clock-readout">--:--</div>
+      <div class="clock-face" id="clock-face" style="width:${tam}px;height:${tam}px;">
+        ${marcasHtml}
+        ${numsHtml}
+        <div class="clock-hand" id="clock-hand"><div class="clock-hand-tip"></div></div>
+        <div class="clock-center-dot"></div>
+      </div>
+      <div class="cp-actions">
+        <button type="button" class="btn" data-acao="cancelar">Cancelar</button>
+        <button type="button" class="btn btn-primary" data-acao="salvar" style="width:auto">Definir</button>
+      </div>
+    `;
+    const face = painel.querySelector('#clock-face');
+    const hand = painel.querySelector('#clock-hand');
+    const readout = painel.querySelector('#clock-readout');
+    const numEls = painel.querySelectorAll('[data-num-hora]');
+
+    function aplicarPasso(passo){
+      passo = ((passo%48)+48)%48;
+      h = Math.floor(passo/2);
+      m = (passo%2)*30;
+      hand.style.transform = `translate(-50%,-100%) rotate(${passo*7.5}deg)`;
+      readout.textContent = pad2(h)+':'+pad2(m);
+      numEls.forEach(el=>{ el.classList.toggle('clock-num-destaque', m===0 && Number(el.dataset.numHora)===h); });
+    }
+    aplicarPasso(h*2 + (m>=30?1:0));
+
+    function passoDeEvento(e){
+      const rect = face.getBoundingClientRect();
+      const cx = rect.left + rect.width/2, cy = rect.top + rect.height/2;
+      const px = e.touches ? e.touches[0].clientX : e.clientX;
+      const py = e.touches ? e.touches[0].clientY : e.clientY;
+      let ang = Math.atan2(py-cy, px-cx) * 180/Math.PI + 90;
+      if (ang < 0) ang += 360;
+      aplicarPasso(Math.round(ang/7.5));
+    }
+    function ligarArraste(el, handler){
+      let arrastando = false;
+      const onMove = (e)=>{ if (arrastando){ handler(e); e.preventDefault(); } };
+      const onUp = ()=>{
+        arrastando = false;
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend', onUp);
+      };
+      el.addEventListener('mousedown', (e)=>{ arrastando=true; handler(e); document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); });
+      el.addEventListener('touchstart', (e)=>{ arrastando=true; handler(e); document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onUp); }, {passive:true});
+    }
+    ligarArraste(face, passoDeEvento);
+
+    painel.querySelector('[data-acao="cancelar"]').addEventListener('click', fechar);
+    painel.querySelector('[data-acao="salvar"]').addEventListener('click', ()=>{
+      const valor = pad2(h)+':'+pad2(m);
+      fechar();
+      aoSalvar(valor);
+    });
+  });
+}
+
+// Monta o par <input de hora> + <botão de relógio>, já com a máscara 24h
+// ligada no input e o relógio de ponteiro ligado no botão. `onCommit` (se
+// informado) é chamado toda vez que o valor muda — tanto digitando quanto
+// escolhendo no relógio — pra quem chamar poder salvar no banco.
+function ligarCampoHoraComRelogio(inputEl, botaoEl, onCommit){
+  ligarCampoHora(inputEl);
+  if (onCommit) inputEl.addEventListener('blur', ()=> onCommit(inputEl.value));
+  botaoEl.addEventListener('click', (e)=>{
+    e.preventDefault();
+    abrirRelogioPicker(botaoEl, inputEl.value, (novoValor)=>{
+      inputEl.value = novoValor;
+      if (onCommit) onCommit(novoValor);
     });
   });
 }
@@ -2082,6 +2196,82 @@ window.deleteRow = async function(tableName, id){
 const MESES_CAL = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 const DIAS_SEMANA_CAL = ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 function pad2(n){ return String(n).padStart(2,'0'); }
+// Campo "Hora" com máscara fixa "00:00": o ":" nunca se move, cada dígito
+// digitado substitui o "0" da posição atual e o cursor avança sozinho
+// (pulando o ":"). Backspace zera a posição e volta o cursor. Enquanto o
+// campo estiver vazio, o placeholder "00:00" continua visível — só vira
+// valor de verdade quando a pessoa digita o primeiro dígito.
+function normalizarHora24(v){
+  const digitos = String(v||'').replace(/\D/g,'').slice(0,4);
+  if (!digitos) return '';
+  let h, m;
+  if (digitos.length <= 2){ h = digitos; m = '00'; }
+  else { h = digitos.slice(0, digitos.length-2); m = digitos.slice(-2); }
+  const hh = Math.min(23, parseInt(h,10)||0);
+  const mm = Math.min(59, parseInt(m,10)||0);
+  return pad2(hh) + ':' + pad2(mm);
+}
+function ligarCampoHora(el){
+  const SLOTS = [0,1,3,4]; // índices editáveis em "HH:MM" (2 é o ":")
+  let slotAtual = 0; // rastreado à parte — reler do DOM depois de trocar
+                      // el.value é ambíguo (o navegador reposiciona o
+                      // cursor pro fim do valor sozinho) e foi a causa do bug
+  function valido(v){ return /^\d{2}:\d{2}$/.test(v); }
+  function proximoSlot(idx){ const i = SLOTS.indexOf(idx); return SLOTS[Math.min(i+1, SLOTS.length-1)]; }
+  function slotAnterior(idx){ const i = SLOTS.indexOf(idx); return SLOTS[Math.max(i-1, 0)]; }
+  function slotMaisProximoDoClique(pos){
+    if (pos<=1) return 0;
+    if (pos===2) return 1;
+    if (pos===3) return 3;
+    return 4;
+  }
+  function selecionar(idx){ slotAtual = idx; try{ el.setSelectionRange(idx, idx+1); }catch(e){} }
+
+  el.addEventListener('focus', ()=>{
+    if (valido(el.value)) requestAnimationFrame(()=>selecionar(0));
+    else slotAtual = 0;
+  });
+  el.addEventListener('click', ()=>{
+    setTimeout(()=>{
+      if (!valido(el.value)) return;
+      selecionar(slotMaisProximoDoClique(el.selectionStart));
+    }, 0);
+  });
+  el.addEventListener('keydown', (e)=>{
+    if (e.ctrlKey || e.metaKey || e.altKey || e.key==='Tab') return;
+    if (e.key==='ArrowLeft'){ e.preventDefault(); if (valido(el.value)) selecionar(slotAnterior(slotAtual)); return; }
+    if (e.key==='ArrowRight'){ e.preventDefault(); if (valido(el.value)) selecionar(proximoSlot(slotAtual)); return; }
+    if (/^[0-9]$/.test(e.key)){
+      e.preventDefault();
+      if (!valido(el.value)){ el.value = '00:00'; slotAtual = 0; }
+      const chars = el.value.split('');
+      const idx = slotAtual;
+      // trava dígitos que tornariam a hora/minuto inválidos (ex.: só deixa
+      // "2_" virar 20-23, nunca 2_ maior que isso)
+      if (idx===0 && e.key>'2') return;
+      if (idx===1 && chars[0]==='2' && e.key>'3') return;
+      if (idx===3 && e.key>'5') return;
+      chars[idx] = e.key;
+      el.value = chars.join('');
+      selecionar(proximoSlot(idx));
+      return;
+    }
+    if (e.key==='Backspace' || e.key==='Delete'){
+      e.preventDefault();
+      if (!valido(el.value)){ el.value = ''; slotAtual = 0; return; }
+      const chars = el.value.split('');
+      const idx = e.key==='Backspace' ? slotAnterior(slotAtual) : slotAtual;
+      chars[idx] = '0';
+      el.value = chars.join('');
+      selecionar(idx);
+      return;
+    }
+    if (e.key.length===1) e.preventDefault(); // bloqueia letras/símbolos
+  });
+  el.addEventListener('blur', ()=>{
+    if (el.value && !valido(el.value)) el.value = normalizarHora24(el.value) || '';
+  });
+}
 function isoLocal(y,m,d){ return `${y}-${pad2(m+1)}-${pad2(d)}`; }
 
 async function viewProgramacaoCarregamento(){
@@ -2110,28 +2300,10 @@ async function viewProgramacaoCarregamento(){
     return null;
   }
 
-  // Campo "Hora" sempre no formato 24h "00:00": filtra pra dígitos/dois-pontos
-  // enquanto digita, e normaliza (com zero à esquerda) quando perde o foco.
-  function normalizarHora24(v){
-    const digitos = String(v||'').replace(/\D/g,'').slice(0,4);
-    if (!digitos) return '';
-    let h, m;
-    if (digitos.length <= 2){ h = digitos; m = '00'; }
-    else { h = digitos.slice(0, digitos.length-2); m = digitos.slice(-2); }
-    const hh = Math.min(23, parseInt(h,10)||0);
-    const mm = Math.min(59, parseInt(m,10)||0);
-    return pad2(hh) + ':' + pad2(mm);
-  }
-  function ligarCampoHora(el){
-    el.addEventListener('input', ()=>{
-      let v = el.value.replace(/[^\d:]/g,'');
-      if (v.length > 5) v = v.slice(0,5);
-      el.value = v;
-    });
-    el.addEventListener('blur', ()=>{
-      el.value = normalizarHora24(el.value);
-    });
-  }
+  // Campo "Hora" sempre no formato 24h "00:00" — a máscara/normalização e o
+  // relógio de ponteiro estão em funções globais (ligarCampoHora,
+  // normalizarHora24, ligarCampoHoraComRelogio), reaproveitadas em vários
+  // pontos do app.
 
   const hoje = new Date();
   const state = { ano: hoje.getFullYear(), mes: hoje.getMonth() };
@@ -2164,7 +2336,7 @@ async function viewProgramacaoCarregamento(){
       const max = 3;
       const chips = doDia.slice(0,max).map(r=>{
         const cor = corDaOpcao('chamados_franquia', r.franquia) || '#7f9a72';
-        return `<div class="pcarg-chip" style="background:${corMenuParaTema(cor)};color:${textoParaCorDeMenu(cor)}" title="${escapeHtml(r.franquia||'')}">${r.hora?escapeHtml(r.hora)+' · ':''}${escapeHtml(r.franquia||'Sem franquia')}</div>`;
+        return `<div class="pcarg-chip" style="background:${corMenuParaTema(cor)};color:${textoParaCorDeMenu(cor)}" title="${escapeHtml(r.franquia||'')}${r.status?' — '+escapeHtml(r.status):''}">${r.status?`<span class="pcarg-chip-status" style="background:${corMenuParaTema(corDaOpcao('carregamento_status', r.status))}"></span>`:''}<span class="pcarg-chip-texto">${r.hora?escapeHtml(r.hora)+' · ':''}${escapeHtml(r.franquia||'Sem franquia')}</span></div>`;
       }).join('');
       const mais = doDia.length>max ? `<div class="pcarg-chip-mais">+${doDia.length-max} mais</div>` : '';
       html += `<div class="pcarg-dia${foraMes?' fora-mes':''}${iso===hojeStr?' hoje':''}${especial?' pcarg-especial':''}" data-dia="${iso}" ${especial?`title="${escapeHtml(especial.texto)}"`:''}>
@@ -2198,7 +2370,7 @@ async function viewProgramacaoCarregamento(){
             ${podeEditarAlgo ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                 <div data-franquia-wrap style="min-width:160px;"></div>
-                <input type="text" inputmode="numeric" class="cell-input pcarg-hora-input" data-hora value="${escapeHtml(r.hora||'')}" placeholder="00:00" maxlength="5" />
+                <div class="hora-field-wrap"><input type="text" inputmode="numeric" class="cell-input pcarg-hora-input" data-hora value="${escapeHtml(r.hora||'')}" placeholder="00:00" maxlength="5" required /><button type="button" class="hora-clock-btn" data-hora-clock title="Escolher hora no relógio">🕐</button></div>
                 <div data-status-wrap style="min-width:150px;"></div>
                 <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-faint);">Mover pra<span data-mover-wrap></span></div>
               </div>
@@ -2224,7 +2396,7 @@ async function viewProgramacaoCarregamento(){
         ${podeCriar ? `
         <h3 style="font-size:13.5px;margin:18px 0 10px;">+ Agendar carregamento</h3>
         <div class="field"><label>Franquia</label><div id="novo-franquia-wrap"></div></div>
-        <div class="field"><label>Hora</label><input type="text" inputmode="numeric" class="cell-input pcarg-hora-input" id="novo-hora" placeholder="00:00" maxlength="5" /></div>
+        <div class="field"><label>Hora</label><div class="hora-field-wrap"><input type="text" inputmode="numeric" class="cell-input pcarg-hora-input" id="novo-hora" placeholder="00:00" maxlength="5" required /><button type="button" class="hora-clock-btn" id="novo-hora-clock" title="Escolher hora no relógio">🕐</button></div></div>
         <div class="field"><label>Observações</label><textarea class="cell-input" id="novo-obs" rows="2"></textarea></div>
         ` : ''}
         ${podeEditarAlgo ? `
@@ -2288,10 +2460,11 @@ async function viewProgramacaoCarregamento(){
             });
           }
           const horaInput = itemEl.querySelector('[data-hora]');
-          if (horaInput){
-            ligarCampoHora(horaInput);
-            horaInput.addEventListener('blur', async ()=>{
-              const v = horaInput.value.trim() || null;
+          const horaClockBtn = itemEl.querySelector('[data-hora-clock]');
+          if (horaInput && horaClockBtn){
+            ligarCampoHoraComRelogio(horaInput, horaClockBtn, async (novoValor)=>{
+              const v = novoValor.trim();
+              if (!v){ toast('A hora é obrigatória.', true); horaInput.value = registro.hora || ''; return; }
               if (v === (registro.hora||null)) return;
               const { error: errUp } = await sb.from('agendamentos_carregamento').update({ hora: v }).eq('id', id);
               if (errUp) return toast('Erro: '+errUp.message, true);
@@ -2353,16 +2526,18 @@ async function viewProgramacaoCarregamento(){
     if (podeCriar){
       let franquiaEscolhida = '';
       document.getElementById('novo-franquia-wrap').innerHTML = buildSimplePicker('', opcoesDe('chamados_franquia').map(o=>({value:o.valor, label:o.valor, dot:corMenuParaTema(o.cor)})), (v)=>{ franquiaEscolhida = v; }, { placeholder:'Selecione a franquia' });
-      ligarCampoHora(document.getElementById('novo-hora'));
+      ligarCampoHoraComRelogio(document.getElementById('novo-hora'), document.getElementById('novo-hora-clock'));
       document.getElementById('btn-agendar').addEventListener('click', async ()=>{
         if (!franquiaEscolhida) return toast('Escolha a franquia.', true);
+        const horaValor = normalizarHora24(document.getElementById('novo-hora').value);
+        if (!horaValor) return toast('A hora é obrigatória.', true);
         if (especial){
           const msg = especial.tipo==='feriado'
             ? `Esse dia é feriado (${especial.texto}). Confirma o agendamento mesmo assim?`
             : `Esse dia é fim de semana. Confirma o agendamento mesmo assim?`;
           if (!(await confirmarAcao(msg, 'Agendar mesmo assim'))) return;
         }
-        const registro = { data: iso, hora: normalizarHora24(document.getElementById('novo-hora').value) || null, franquia: franquiaEscolhida, observacoes: document.getElementById('novo-obs').value.trim()||null, criado_por: currentUser.id };
+        const registro = { data: iso, hora: horaValor, franquia: franquiaEscolhida, observacoes: document.getElementById('novo-obs').value.trim()||null, criado_por: currentUser.id };
         const { data: novo, error: errIns } = await sb.from('agendamentos_carregamento').insert(registro).select().single();
         if (errIns) return toast('Erro ao agendar: '+errIns.message, true);
         dados.push(novo);
@@ -3121,16 +3296,23 @@ async function montarPainelPermissoes(meuTokenDaTela){
           }
           const acessoCells = PAPEIS.map(r=>celula(r,'acesso')).join('');
           if (!subs.length){
-            return `<tr class="perm-aba-row" data-aba="${key}"><td>${escapeHtml(label)}</td>${acessoCells}</tr>`;
+            return `<tr data-aba="${key}"><td>${escapeHtml(label)}</td>${acessoCells}</tr>`;
+          }
+          function celulaAnimada(conteudoHtml, centralizado){
+            return `<td><div class="perm-sub-inner${centralizado?' centralizado':''}">${conteudoHtml}</div></td>`;
           }
           const linhaPrincipal = `<tr class="perm-aba-row" data-aba="${key}">
             <td><button type="button" class="perm-toggle" data-toggle-aba="${key}"><span class="chev">▸</span>${escapeHtml(label)}</button></td>
             ${acessoCells}
           </tr>`;
-          const subLinhas = subs.map((s,i)=>`
-            <tr class="perm-sub-row${i===subs.length-1?' perm-sub-row-last':''}" data-aba="${key}" style="display:none;">
-              <td>${escapeHtml(s.label)}</td>
-              ${PAPEIS.map(r=>celula(r, s.key)).join('')}
+          const subLinhas = subs.map(s=>`
+            <tr class="perm-sub-row" data-aba="${key}">
+              ${celulaAnimada(escapeHtml(s.label))}
+              ${PAPEIS.map(r=>{
+                const travado = (r==='admin' && key==='usuarios');
+                const marcado = travado ? true : !!atual[r][key][s.key];
+                return celulaAnimada(`<input type="checkbox" class="perm-check" data-role="${r}" data-aba="${key}" data-chave="${s.key}" ${marcado?'checked':''} ${travado?'disabled':''} />`, true);
+              }).join('')}
             </tr>
           `).join('');
           return linhaPrincipal + subLinhas;
@@ -3145,7 +3327,7 @@ async function montarPainelPermissoes(meuTokenDaTela){
     btn.addEventListener('click', ()=>{
       const aba = btn.dataset.toggleAba;
       const aberto = btn.classList.toggle('aberto');
-      painel.querySelectorAll(`.perm-sub-row[data-aba="${aba}"]`).forEach(tr=>{ tr.style.display = aberto ? '' : 'none'; });
+      painel.querySelectorAll(`.perm-sub-row[data-aba="${aba}"]`).forEach(tr=>{ tr.classList.toggle('aberto', aberto); });
     });
   });
 
