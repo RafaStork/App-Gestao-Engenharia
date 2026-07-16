@@ -404,32 +404,41 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .section-note{ border:1px dashed var(--border); color:var(--text-dim); font-size:12.5px; padding:11px 14px; margin-bottom:16px; border-radius:var(--r-lg); background:var(--bg-soft); }
 
 /* ── Calendário de Programação de Carregamento ─────────────────────────── */
-.cal-toolbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
-.cal-nav-btn{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--surface); border:1px solid var(--border); color:var(--text); font-size:14px; display:flex; align-items:center; justify-content:center; transition:background .15s var(--ease-out), border-color .15s var(--ease-out), transform .12s var(--ease-spring); }
-.cal-nav-btn:hover{ background:var(--bg-soft); border-color:var(--text-faint); }
-.cal-nav-btn:active{ transform:scale(.92); }
-.cal-titulo{ font-size:16px; font-weight:800; min-width:170px; text-transform:capitalize; }
-.cal-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; animation:cardIn .32s var(--ease-out) both; }
-.cal-cabecalho{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); text-align:center; padding:4px 0 8px; }
-.cal-dia{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); min-height:104px; padding:8px; display:flex; flex-direction:column; gap:5px; cursor:pointer; transition:border-color .16s var(--ease-out), box-shadow .16s var(--ease-out), transform .12s var(--ease-spring); }
-.cal-dia:hover{ border-color:var(--accent); box-shadow:var(--shadow); transform:translateY(-2px); }
-.cal-dia.fora-mes{ opacity:.38; }
-.cal-dia.hoje{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-soft); }
-.cal-dia-num{ font-size:12px; font-weight:800; color:var(--text-dim); }
-.cal-dia.hoje .cal-dia-num{ color:var(--accent); }
-.cal-dia.cal-especial{ background:rgba(192,57,43,.08); border-color:rgba(192,57,43,.35); }
-[data-theme="dark"] .cal-dia.cal-especial{ background:rgba(224,90,80,.10); border-color:rgba(224,90,80,.4); }
-.cal-dia.cal-especial .cal-dia-num{ color:#c0392b; }
-.cal-dia-tag{ font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:#c0392b; border-radius:5px; padding:1px 5px; margin-left:6px; vertical-align:middle; }
-.cal-agendamentos{ display:flex; flex-direction:column; gap:4px; overflow:hidden; }
-.cal-chip{ font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:6px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 1px rgba(0,0,0,.14); box-shadow:0 1px 2px rgba(0,0,0,.10); animation:cardIn .22s var(--ease-out) both; }
-.cal-chip-mais{ font-size:10px; color:var(--text-faint); font-weight:700; padding:2px 4px; }
-.cal-dia-add{ margin-top:auto; align-self:flex-end; font-size:16px; line-height:1; color:var(--text-faint); opacity:0; transition:opacity .14s var(--ease-out), color .14s var(--ease-out); }
-@media (hover:hover){ .cal-dia:hover .cal-dia-add{ opacity:1; color:var(--accent); } }
-@media (hover:none){ .cal-dia-add{ opacity:1; } }
-.cal-agend-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border-soft); border-radius:10px; margin-bottom:8px; background:var(--bg-soft); transition:border-color .14s var(--ease-out); }
-.cal-agend-item:hover{ border-color:var(--text-faint); }
-.cal-agend-cor{ width:8px; height:34px; border-radius:4px; flex-shrink:0; }
+/* Prefixo "pcarg-" de propósito: o app já tem um seletor de data nativo
+   (.cal-dd/.cal-grid/.cal-day, usado em todo campo de data) — usar o mesmo
+   prefixo aqui quebraria aquele componente em todas as outras abas. */
+.pcarg-toolbar{ display:flex; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+.pcarg-nav-btn{ width:34px; height:34px; flex-shrink:0; border-radius:9px; background:var(--surface); border:1px solid var(--border); color:var(--text); font-size:14px; display:flex; align-items:center; justify-content:center; transition:background .15s var(--ease-out), border-color .15s var(--ease-out), transform .12s var(--ease-spring); }
+.pcarg-nav-btn:hover{ background:var(--bg-soft); border-color:var(--text-faint); }
+.pcarg-nav-btn:active{ transform:scale(.92); }
+.pcarg-titulo{ font-size:16px; font-weight:800; min-width:170px; text-transform:capitalize; }
+.pcarg-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:8px; animation:cardIn .32s var(--ease-out) both; }
+.pcarg-cabecalho{ font-size:10.5px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:var(--text-faint); text-align:center; padding:4px 0 8px; }
+.pcarg-dia{ background:var(--surface); border:1px solid var(--border); border-radius:var(--r); min-height:104px; padding:8px; display:flex; flex-direction:column; gap:5px; cursor:pointer; transition:border-color .16s var(--ease-out), box-shadow .16s var(--ease-out), transform .12s var(--ease-spring); }
+.pcarg-dia:hover{ border-color:var(--accent); box-shadow:var(--shadow); transform:translateY(-2px); }
+.pcarg-dia.fora-mes{ opacity:.38; }
+.pcarg-dia.hoje{ border-color:var(--accent); box-shadow:0 0 0 1px var(--accent-soft); }
+.pcarg-dia-num{ font-size:12px; font-weight:800; color:var(--text-dim); }
+.pcarg-dia.hoje .pcarg-dia-num{ color:var(--accent); }
+.pcarg-dia.pcarg-especial{ background:rgba(192,57,43,.08); border-color:rgba(192,57,43,.35); }
+[data-theme="dark"] .pcarg-dia.pcarg-especial{ background:rgba(224,90,80,.10); border-color:rgba(224,90,80,.4); }
+.pcarg-dia.pcarg-especial .pcarg-dia-num{ color:#c0392b; }
+.pcarg-dia-tag{ font-size:8.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; color:#fff; background:#c0392b; border-radius:5px; padding:1px 5px; margin-left:6px; vertical-align:middle; }
+.pcarg-agendamentos{ display:flex; flex-direction:column; gap:4px; overflow:hidden; }
+.pcarg-chip{ font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:6px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-shadow:0 1px 1px rgba(0,0,0,.14); box-shadow:0 1px 2px rgba(0,0,0,.10); animation:cardIn .22s var(--ease-out) both; }
+.pcarg-chip-mais{ font-size:10px; color:var(--text-faint); font-weight:700; padding:2px 4px; }
+.pcarg-dia-add{ margin-top:auto; align-self:flex-end; font-size:16px; line-height:1; color:var(--text-faint); opacity:0; transition:opacity .14s var(--ease-out), color .14s var(--ease-out); }
+@media (hover:hover){ .pcarg-dia:hover .pcarg-dia-add{ opacity:1; color:var(--accent); } }
+@media (hover:none){ .pcarg-dia-add{ opacity:1; } }
+.pcarg-agend-item{ display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--border-soft); border-radius:10px; margin-bottom:8px; background:var(--bg-soft); transition:border-color .14s var(--ease-out); }
+.pcarg-agend-item:hover{ border-color:var(--text-faint); }
+.pcarg-agend-cor{ width:8px; height:34px; border-radius:4px; flex-shrink:0; }
+/* Campo "Hora" (input type=time) e o seletor de data "Mover pra" usando o
+   mesmo componente de calendário (buildCalendarField) do resto do site —
+   então herdam a classe .cell-date já usada nos outros campos de data. */
+.pcarg-hora-input{ width:100px; text-align:center; font-family:var(--mono); }
+
+
 
 /* Seletor de cor das opções de menu (status/prioridade etc.): um "botão de
    cor" arredondado que abre um seletor visual próprio (abaixo), em vez do
@@ -964,10 +973,16 @@ const NAV_ITEMS_PADRAO = {
 // registros ganham 5 categorias, exibidas como checkboxes numa linha
 // expansível dentro da tela de permissões (Usuários > Permissões de abas).
 const SUBPERMISSOES_ABA = {
-  dashboard:      [ {key:'acesso', label:'Ter acesso a esta aba'} ],
-  'minhas-tarefas': [ {key:'acesso', label:'Ter acesso a esta aba'} ],
-  'opcoes-menu':  [ {key:'acesso', label:'Ter acesso a esta aba'} ],
-  auditoria:      [ {key:'acesso', label:'Ter acesso a esta aba'} ],
+  dashboard: [
+    {key:'sac',      label:'Ver sub-aba SAC'},
+    {key:'vendas',   label:'Ver sub-aba Vendas'},
+    {key:'projetos', label:'Ver sub-aba Projetos'},
+    {key:'sacind',   label:'Ver sub-aba SAC ↔ Indústria'},
+    {key:'anual',    label:'Ver sub-aba Resumo anual (tabela)'},
+  ],
+  'minhas-tarefas': [],
+  'opcoes-menu':  [],
+  auditoria:      [],
   chamados: [
     {key:'ver_proprio', label:'Visualizar chamados designados ao próprio usuário'},
     {key:'ver_outros',  label:'Visualizar chamados designados a outros usuários'},
@@ -1011,7 +1026,14 @@ const SUBPERMISSOES_ABA = {
     {key:'excluir',     label:'Permissão para excluir usuários'},
   ],
 };
-function chavesPermissaoDe(aba){ return (SUBPERMISSOES_ABA[aba]||[]).map(s=>s.key); }
+// "acesso" é o interruptor mestre — SEMPRE existe pra toda aba, mesmo as que
+// têm subcategorias detalhadas — e é o que decide se a aba aparece no menu
+// lateral. As subcategorias específicas (ver_proprio, criar, editar...)
+// controlam o que dá pra fazer *depois* de já ter acesso, e ficam dentro do
+// menu que expande. Isso resolve o problema de dar acesso a uma aba sem
+// precisar mexer em nenhuma subcategoria.
+function subcategoriasDetalhadasDe(aba){ return SUBPERMISSOES_ABA[aba] || []; }
+function chavesPermissaoDe(aba){ return ['acesso', ...subcategoriasDetalhadasDe(aba).map(s=>s.key)]; }
 
 // Padrão de fábrica: só entra "tudo habilitado" se a aba estiver na lista
 // padrão do papel (NAV_ITEMS_PADRAO) — do contrário, tudo desabilitado.
@@ -1067,7 +1089,7 @@ function ehGestorOuAdmin(role){
   role = role || (currentProfile && currentProfile.role) || '';
   return role === 'admin' || role.startsWith('gestor');
 }
-function abaTemAlgumAcesso(perm){ return Object.values(perm||{}).some(Boolean); }
+function abaTemAlgumAcesso(perm){ return !!(perm && perm.acesso); }
 
 function abasPermitidasPara(role){
   let abas = ABAS_DISPONIVEIS.filter(([key])=> abaTemAlgumAcesso(permissoesPara(key, role)));
@@ -2071,28 +2093,51 @@ async function viewProgramacaoCarregamento(){
     return null;
   }
 
+  // Campo "Hora" sempre no formato 24h "00:00": filtra pra dígitos/dois-pontos
+  // enquanto digita, e normaliza (com zero à esquerda) quando perde o foco.
+  function normalizarHora24(v){
+    const digitos = String(v||'').replace(/\D/g,'').slice(0,4);
+    if (!digitos) return '';
+    let h, m;
+    if (digitos.length <= 2){ h = digitos; m = '00'; }
+    else { h = digitos.slice(0, digitos.length-2); m = digitos.slice(-2); }
+    const hh = Math.min(23, parseInt(h,10)||0);
+    const mm = Math.min(59, parseInt(m,10)||0);
+    return pad2(hh) + ':' + pad2(mm);
+  }
+  function ligarCampoHora(el){
+    el.addEventListener('input', ()=>{
+      let v = el.value.replace(/[^\d:]/g,'');
+      if (v.length > 5) v = v.slice(0,5);
+      el.value = v;
+    });
+    el.addEventListener('blur', ()=>{
+      el.value = normalizarHora24(el.value);
+    });
+  }
+
   const hoje = new Date();
   const state = { ano: hoje.getFullYear(), mes: hoje.getMonth() };
 
   const root = document.getElementById('view-root');
   root.innerHTML = `
     <div class="section-note">Clique em um dia pra ver, editar ou agendar carregamentos. Dias em vermelho são feriados ou fins de semana — o app avisa antes de confirmar um agendamento neles.</div>
-    <div class="cal-toolbar">
-      <button type="button" class="cal-nav-btn" id="cal-prev" title="Mês anterior">‹</button>
-      <div class="cal-titulo" id="cal-titulo"></div>
-      <button type="button" class="cal-nav-btn" id="cal-next" title="Próximo mês">›</button>
-      <button type="button" class="btn" id="cal-btn-hoje" style="width:auto">Hoje</button>
+    <div class="pcarg-toolbar">
+      <button type="button" class="pcarg-nav-btn" id="pcarg-prev" title="Mês anterior">‹</button>
+      <div class="pcarg-titulo" id="pcarg-titulo"></div>
+      <button type="button" class="pcarg-nav-btn" id="pcarg-next" title="Próximo mês">›</button>
+      <button type="button" class="btn" id="pcarg-btn-hoje" style="width:auto">Hoje</button>
       <div class="spacer"></div>
     </div>
-    <div class="cal-grid" id="cal-grid"></div>
+    <div class="pcarg-grid" id="pcarg-grid"></div>
   `;
 
   function renderGrid(){
-    document.getElementById('cal-titulo').textContent = `${MESES_CAL[state.mes]} ${state.ano}`;
+    document.getElementById('pcarg-titulo').textContent = `${MESES_CAL[state.mes]} ${state.ano}`;
     const primeiroDoMes = new Date(state.ano, state.mes, 1);
     const inicioGrid = new Date(state.ano, state.mes, 1 - primeiroDoMes.getDay());
     const hojeStr = isoLocal(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-    let html = DIAS_SEMANA_CAL.map(d=>`<div class="cal-cabecalho">${d}</div>`).join('');
+    let html = DIAS_SEMANA_CAL.map(d=>`<div class="pcarg-cabecalho">${d}</div>`).join('');
     for (let i=0;i<42;i++){
       const d = new Date(inicioGrid); d.setDate(inicioGrid.getDate()+i);
       const iso = isoLocal(d.getFullYear(), d.getMonth(), d.getDate());
@@ -2102,18 +2147,18 @@ async function viewProgramacaoCarregamento(){
       const max = 3;
       const chips = doDia.slice(0,max).map(r=>{
         const cor = corDaOpcao('chamados_franquia', r.franquia) || '#7f9a72';
-        return `<div class="cal-chip" style="background:${corMenuParaTema(cor)};color:${textoParaCorDeMenu(cor)}" title="${escapeHtml(r.franquia||'')}">${r.hora?escapeHtml(r.hora)+' · ':''}${escapeHtml(r.franquia||'Sem franquia')}</div>`;
+        return `<div class="pcarg-chip" style="background:${corMenuParaTema(cor)};color:${textoParaCorDeMenu(cor)}" title="${escapeHtml(r.franquia||'')}">${r.hora?escapeHtml(r.hora)+' · ':''}${escapeHtml(r.franquia||'Sem franquia')}</div>`;
       }).join('');
-      const mais = doDia.length>max ? `<div class="cal-chip-mais">+${doDia.length-max} mais</div>` : '';
-      html += `<div class="cal-dia${foraMes?' fora-mes':''}${iso===hojeStr?' hoje':''}${especial?' cal-especial':''}" data-dia="${iso}" ${especial?`title="${escapeHtml(especial.texto)}"`:''}>
-        <div class="cal-dia-num">${d.getDate()}${especial?`<span class="cal-dia-tag">${especial.tipo==='feriado'?'feriado':'fim de semana'}</span>`:''}</div>
-        <div class="cal-agendamentos">${chips}${mais}</div>
-        ${(podeCriar||podeEditarAlgo)?'<div class="cal-dia-add">+ ver / agendar</div>':''}
+      const mais = doDia.length>max ? `<div class="pcarg-chip-mais">+${doDia.length-max} mais</div>` : '';
+      html += `<div class="pcarg-dia${foraMes?' fora-mes':''}${iso===hojeStr?' hoje':''}${especial?' pcarg-especial':''}" data-dia="${iso}" ${especial?`title="${escapeHtml(especial.texto)}"`:''}>
+        <div class="pcarg-dia-num">${d.getDate()}${especial?`<span class="pcarg-dia-tag">${especial.tipo==='feriado'?'feriado':'fim de semana'}</span>`:''}</div>
+        <div class="pcarg-agendamentos">${chips}${mais}</div>
+        ${(podeCriar||podeEditarAlgo)?'<div class="pcarg-dia-add">+ ver / agendar</div>':''}
       </div>`;
     }
-    const grid = document.getElementById('cal-grid');
+    const grid = document.getElementById('pcarg-grid');
     grid.innerHTML = html;
-    grid.querySelectorAll('.cal-dia').forEach(el=>{
+    grid.querySelectorAll('.pcarg-dia').forEach(el=>{
       el.addEventListener('click', ()=> abrirDiaCarregamento(el.dataset.dia));
     });
   }
@@ -2130,17 +2175,15 @@ async function viewProgramacaoCarregamento(){
       if (!doDia.length) return `<div class="section-note">Nenhum carregamento agendado neste dia.</div>`;
       return doDia.map(r=>{
         const cor = corDaOpcao('chamados_franquia', r.franquia) || '#7f9a72';
-        return `<div class="cal-agend-item" data-id="${r.id}">
-          <div class="cal-agend-cor" style="background:${corMenuParaTema(cor)}"></div>
+        return `<div class="pcarg-agend-item" data-id="${r.id}">
+          <div class="pcarg-agend-cor" style="background:${corMenuParaTema(cor)}"></div>
           <div style="flex:1;display:flex;flex-direction:column;gap:6px;">
             ${podeEditarAlgo ? `
               <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
                 <div data-franquia-wrap style="min-width:160px;"></div>
-                <input type="text" class="cell-input" data-hora value="${escapeHtml(r.hora||'')}" placeholder="Hora" style="width:90px;" />
+                <input type="text" inputmode="numeric" class="cell-input pcarg-hora-input" data-hora value="${escapeHtml(r.hora||'')}" placeholder="00:00" maxlength="5" />
                 <div data-status-wrap style="min-width:150px;"></div>
-                <label style="font-size:11px;color:var(--text-faint);display:flex;align-items:center;gap:5px;">Mover pra
-                  <input type="date" class="cell-date" data-mover-data value="${iso}" style="width:150px;" />
-                </label>
+                <div style="display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text-faint);">Mover pra<span data-mover-wrap></span></div>
               </div>
               <textarea class="cell-input" data-obs rows="2" placeholder="Observações">${escapeHtml(r.observacoes||'')}</textarea>
             ` : `
@@ -2160,11 +2203,11 @@ async function viewProgramacaoCarregamento(){
         ${especial ? `<div class="section-note" style="border-color:#c0392b;color:#c0392b;margin-bottom:0;">⚠ Este dia é ${especial.tipo==='feriado' ? `um feriado (${escapeHtml(especial.texto)})` : 'fim de semana'}.</div>` : ''}
       </div>
       <div class="modal-scroll-body">
-        <div id="cal-dia-lista">${montarLista()}</div>
+        <div id="pcarg-dia-lista">${montarLista()}</div>
         ${podeCriar ? `
         <h3 style="font-size:13.5px;margin:18px 0 10px;">+ Agendar carregamento</h3>
         <div class="field"><label>Franquia</label><div id="novo-franquia-wrap"></div></div>
-        <div class="field"><label>Hora</label><input type="text" class="cell-input" id="novo-hora" placeholder="Ex.: 08:30" /></div>
+        <div class="field"><label>Hora</label><input type="text" inputmode="numeric" class="cell-input pcarg-hora-input" id="novo-hora" placeholder="00:00" maxlength="5" /></div>
         <div class="field"><label>Observações</label><textarea class="cell-input" id="novo-obs" rows="2"></textarea></div>
         ` : ''}
         ${podeEditarAlgo ? `
@@ -2193,14 +2236,14 @@ async function viewProgramacaoCarregamento(){
           const idx = dados.findIndex(x=>x.id===btn.dataset.del);
           if (idx>-1) dados.splice(idx,1);
           toast('Agendamento excluído.');
-          document.getElementById('cal-dia-lista').innerHTML = montarLista();
+          document.getElementById('pcarg-dia-lista').innerHTML = montarLista();
           ligarItens();
           renderGrid();
         });
       });
 
       if (podeEditarAlgo){
-        modal.querySelectorAll('.cal-agend-item').forEach(itemEl=>{
+        modal.querySelectorAll('.pcarg-agend-item').forEach(itemEl=>{
           const id = itemEl.dataset.id;
           const registro = dados.find(x=>x.id===id);
           if (!registro) return;
@@ -2228,15 +2271,18 @@ async function viewProgramacaoCarregamento(){
             });
           }
           const horaInput = itemEl.querySelector('[data-hora]');
-          if (horaInput) horaInput.addEventListener('blur', async ()=>{
-            const v = horaInput.value.trim() || null;
-            if (v === (registro.hora||null)) return;
-            const { error: errUp } = await sb.from('agendamentos_carregamento').update({ hora: v }).eq('id', id);
-            if (errUp) return toast('Erro: '+errUp.message, true);
-            registro.hora = v;
-            flashSaved(horaInput);
-            renderGrid();
-          });
+          if (horaInput){
+            ligarCampoHora(horaInput);
+            horaInput.addEventListener('blur', async ()=>{
+              const v = horaInput.value.trim() || null;
+              if (v === (registro.hora||null)) return;
+              const { error: errUp } = await sb.from('agendamentos_carregamento').update({ hora: v }).eq('id', id);
+              if (errUp) return toast('Erro: '+errUp.message, true);
+              registro.hora = v;
+              flashSaved(horaInput);
+              renderGrid();
+            });
+          }
           const obsInput = itemEl.querySelector('[data-obs]');
           if (obsInput) obsInput.addEventListener('blur', async ()=>{
             const v = obsInput.value.trim() || null;
@@ -2246,27 +2292,42 @@ async function viewProgramacaoCarregamento(){
             registro.observacoes = v;
             flashSaved(obsInput);
           });
-          const moverInput = itemEl.querySelector('[data-mover-data]');
-          if (moverInput) moverInput.addEventListener('change', async ()=>{
-            const novaData = moverInput.value;
-            if (!novaData || novaData === iso) return;
-            const novaDataObj = new Date(novaData+'T00:00:00');
-            const especialNovo = infoEspecialDia(novaData, novaDataObj);
-            if (especialNovo){
-              const dataFmt = novaData.split('-').reverse().join('/');
-              const msg = especialNovo.tipo==='feriado'
-                ? `O dia ${dataFmt} é feriado (${especialNovo.texto}). Confirma mover o carregamento pra essa data?`
-                : `O dia ${dataFmt} é fim de semana. Confirma mover o carregamento pra essa data?`;
-              if (!(await confirmarAcao(msg, 'Mover mesmo assim'))){ moverInput.value = iso; return; }
-            }
-            const { error: errUp } = await sb.from('agendamentos_carregamento').update({ data: novaData }).eq('id', id);
-            if (errUp){ toast('Erro: '+errUp.message, true); moverInput.value = iso; return; }
-            registro.data = novaData;
-            toast('Carregamento movido de data.');
-            document.getElementById('cal-dia-lista').innerHTML = montarLista();
-            ligarItens();
-            renderGrid();
-          });
+          const moverWrap = itemEl.querySelector('[data-mover-wrap]');
+          if (moverWrap){
+            moverWrap.innerHTML = buildCalendarField(registro.data, async (novaData)=>{
+              if (!novaData || novaData === registro.data) return false;
+              const novaDataObj = new Date(novaData+'T00:00:00');
+              const especialNovo = infoEspecialDia(novaData, novaDataObj);
+              if (especialNovo){
+                const dataFmt = novaData.split('-').reverse().join('/');
+                const msg = especialNovo.tipo==='feriado'
+                  ? `O dia ${dataFmt} é feriado (${especialNovo.texto}). Confirma mover o carregamento pra essa data?`
+                  : `O dia ${dataFmt} é fim de semana. Confirma mover o carregamento pra essa data?`;
+                if (!(await confirmarAcao(msg, 'Mover mesmo assim'))){
+                  document.getElementById('pcarg-dia-lista').innerHTML = montarLista();
+                  ligarItens();
+                  return false;
+                }
+              } else if (!(await confirmarAcao(`Confirma mover este carregamento pro dia ${novaData.split('-').reverse().join('/')}?`, 'Mover'))){
+                document.getElementById('pcarg-dia-lista').innerHTML = montarLista();
+                ligarItens();
+                return false;
+              }
+              const { error: errUp } = await sb.from('agendamentos_carregamento').update({ data: novaData }).eq('id', id);
+              if (errUp){
+                toast('Erro: '+errUp.message, true);
+                document.getElementById('pcarg-dia-lista').innerHTML = montarLista();
+                ligarItens();
+                return false;
+              }
+              registro.data = novaData;
+              toast('Carregamento movido de data.');
+              document.getElementById('pcarg-dia-lista').innerHTML = montarLista();
+              ligarItens();
+              renderGrid();
+              return true;
+            });
+          }
         });
       }
     }
@@ -2275,6 +2336,7 @@ async function viewProgramacaoCarregamento(){
     if (podeCriar){
       let franquiaEscolhida = '';
       document.getElementById('novo-franquia-wrap').innerHTML = buildSimplePicker('', opcoesDe('chamados_franquia').map(o=>({value:o.valor, label:o.valor, dot:corMenuParaTema(o.cor)})), (v)=>{ franquiaEscolhida = v; }, { placeholder:'Selecione a franquia' });
+      ligarCampoHora(document.getElementById('novo-hora'));
       document.getElementById('btn-agendar').addEventListener('click', async ()=>{
         if (!franquiaEscolhida) return toast('Escolha a franquia.', true);
         if (especial){
@@ -2283,12 +2345,12 @@ async function viewProgramacaoCarregamento(){
             : `Esse dia é fim de semana. Confirma o agendamento mesmo assim?`;
           if (!(await confirmarAcao(msg, 'Agendar mesmo assim'))) return;
         }
-        const registro = { data: iso, hora: document.getElementById('novo-hora').value.trim()||null, franquia: franquiaEscolhida, observacoes: document.getElementById('novo-obs').value.trim()||null, criado_por: currentUser.id };
+        const registro = { data: iso, hora: normalizarHora24(document.getElementById('novo-hora').value) || null, franquia: franquiaEscolhida, observacoes: document.getElementById('novo-obs').value.trim()||null, criado_por: currentUser.id };
         const { data: novo, error: errIns } = await sb.from('agendamentos_carregamento').insert(registro).select().single();
         if (errIns) return toast('Erro ao agendar: '+errIns.message, true);
         dados.push(novo);
         toast('Carregamento agendado.');
-        document.getElementById('cal-dia-lista').innerHTML = montarLista();
+        document.getElementById('pcarg-dia-lista').innerHTML = montarLista();
         ligarItens();
         renderGrid();
         document.getElementById('novo-hora').value = '';
@@ -2318,9 +2380,9 @@ async function viewProgramacaoCarregamento(){
   }
 
   renderGrid();
-  document.getElementById('cal-prev').addEventListener('click', ()=>{ state.mes--; if (state.mes<0){ state.mes=11; state.ano--; } renderGrid(); });
-  document.getElementById('cal-next').addEventListener('click', ()=>{ state.mes++; if (state.mes>11){ state.mes=0; state.ano++; } renderGrid(); });
-  document.getElementById('cal-btn-hoje').addEventListener('click', ()=>{ state.ano = hoje.getFullYear(); state.mes = hoje.getMonth(); renderGrid(); });
+  document.getElementById('pcarg-prev').addEventListener('click', ()=>{ state.mes--; if (state.mes<0){ state.mes=11; state.ano--; } renderGrid(); });
+  document.getElementById('pcarg-next').addEventListener('click', ()=>{ state.mes++; if (state.mes>11){ state.mes=0; state.ano++; } renderGrid(); });
+  document.getElementById('pcarg-btn-hoje').addEventListener('click', ()=>{ state.ano = hoje.getFullYear(); state.mes = hoje.getMonth(); renderGrid(); });
 }
 
 const CAMPOS_MINHAS_TAREFAS = [
@@ -3029,24 +3091,24 @@ async function montarPainelPermissoes(meuTokenDaTela){
   painel.id = 'painel-permissoes';
   painel.innerHTML = `
     <h3 style="font-size:15px;font-weight:800;margin:26px 0 12px;">Permissões de abas por papel</h3>
-    <div class="section-note">Clique no nome de uma aba pra abrir as subcategorias de permissão daquela aba, e marque o que cada papel pode fazer. O papel <b>admin</b> sempre mantém controle total sobre "Usuários", pra ninguém ficar trancado fora desta tela.</div>
-    <div class="table-wrap" style="margin-bottom:22px; overflow:visible;"><table>
+    <div class="section-note">A coluna "acesso" na linha principal decide se a aba aparece no menu lateral daquele papel. Abas com mais detalhes têm uma seta ▸ pra expandir e configurar o que a pessoa pode ver/criar/editar/excluir dentro delas. O papel <b>admin</b> sempre mantém controle total sobre "Usuários", pra ninguém ficar trancado fora desta tela.</div>
+    <div class="table-wrap" style="margin-bottom:22px;"><table>
       <thead><tr><th>Aba / Permissão</th>${PAPEIS.map(r=>`<th style="text-align:center">${escapeHtml(ROTULO_PAPEL[r])}</th>`).join('')}</tr></thead>
       <tbody>
         ${ABAS_DISPONIVEIS.map(([key,label])=>{
-          const subs = SUBPERMISSOES_ABA[key] || [{key:'acesso', label:'Ter acesso a esta aba'}];
+          const subs = subcategoriasDetalhadasDe(key);
           function celula(r, chave){
             const travado = (r==='admin' && key==='usuarios');
             const marcado = travado ? true : !!atual[r][key][chave];
             return `<td style="text-align:center"><input type="checkbox" class="perm-check" data-role="${r}" data-aba="${key}" data-chave="${chave}" ${marcado?'checked':''} ${travado?'disabled':''} /></td>`;
           }
-          if (subs.length <= 1){
-            const k = subs[0].key;
-            return `<tr data-aba="${key}"><td>${escapeHtml(label)}</td>${PAPEIS.map(r=>celula(r,k)).join('')}</tr>`;
+          const acessoCells = PAPEIS.map(r=>celula(r,'acesso')).join('');
+          if (!subs.length){
+            return `<tr data-aba="${key}"><td>${escapeHtml(label)}</td>${acessoCells}</tr>`;
           }
           const linhaPrincipal = `<tr class="perm-aba-row" data-aba="${key}">
             <td><button type="button" class="perm-toggle" data-toggle-aba="${key}"><span class="chev">▸</span>${escapeHtml(label)}</button></td>
-            ${PAPEIS.map(()=>`<td></td>`).join('')}
+            ${acessoCells}
           </tr>`;
           const subLinhas = subs.map(s=>`
             <tr class="perm-sub-row" data-aba="${key}" style="display:none;">
@@ -3755,6 +3817,42 @@ function svgGroupedBarChart(labels, series, cores){
 }
 function corSerie(i){ return `hsl(${(i*61)%360},60%,50%)`; }
 
+// Gráfico de pizza — usado no Dashboard > SAC ↔ Indústria (Motivo/Franquia).
+// `pairs`: [[rótulo, valor], ...]; `cores`: uma cor por fatia, na mesma ordem.
+function svgPieChart(pairs, cores){
+  const total = pairs.reduce((s,p)=>s+p[1], 0);
+  if (!total) return `<div class="section-note">Sem dados nesse período.</div>`;
+  const w = 220, h = 220, cx = w/2, cy = h/2, r = 100;
+  let anguloAtual = -Math.PI/2;
+  let fatias = '';
+  pairs.forEach((p,i)=>{
+    const fracao = p[1]/total;
+    const anguloFim = anguloAtual + fracao*Math.PI*2;
+    if (fracao >= 0.9999){
+      fatias += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${cores[i%cores.length]}"/>`;
+    } else {
+      const x1 = cx + r*Math.cos(anguloAtual), y1 = cy + r*Math.sin(anguloAtual);
+      const x2 = cx + r*Math.cos(anguloFim), y2 = cy + r*Math.sin(anguloFim);
+      const grandeArco = (anguloFim-anguloAtual) > Math.PI ? 1 : 0;
+      fatias += `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${grandeArco} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${cores[i%cores.length]}" stroke="var(--surface)" stroke-width="1.5"/>`;
+    }
+    anguloAtual = anguloFim;
+  });
+  const legenda = pairs.map((p,i)=>{
+    const pct = Math.round((p[1]/total)*100);
+    return `<div style="display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--text-dim);margin-bottom:7px;">
+      <span style="width:10px;height:10px;border-radius:3px;background:${cores[i%cores.length]};display:inline-block;flex-shrink:0;"></span>
+      <span style="flex:1;">${escapeHtml(p[0])}</span>
+      <span style="font-weight:700;color:var(--text);">${p[1]}</span>
+      <span style="color:var(--text-faint);min-width:38px;text-align:right;">${pct}%</span>
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;gap:22px;align-items:center;flex-wrap:wrap;">
+    <svg viewBox="0 0 ${w} ${h}" style="width:180px;height:180px;flex-shrink:0;">${fatias}</svg>
+    <div style="flex:1;min-width:170px;">${legenda}</div>
+  </div>`;
+}
+
 // Gráfico agrupado por loja/franquia × mês (uma cor por loja, um grupo de
 // barras por mês) — usado no modo Ano do dashboard. As cores vêm de
 // "Opções dos Menus" (grupoMenu); se algum valor não tiver cor cadastrada
@@ -3805,16 +3903,18 @@ async function viewDashboard(){
   document.getElementById('page-sub').textContent = 'Resumo de chamados, projetos e vendas — por mês ou por ano.';
   const podeDefinirMetas = ehGestorOuAdmin();
 
-  const [chamadosRes, projetosRes, vendasRes, metasRes] = await Promise.all([
+  const [chamadosRes, projetosRes, vendasRes, metasRes, sacIndRes] = await Promise.all([
     sb.from('chamados_sac').select('mes_ref, data_abertura, nota_nps, tempo_resolucao_dias, status, franquia'),
     sb.from('projetos').select('mes_ref, percentual_conclusao, status, data_conclusao_real'),
     sb.from('vendas_expansao').select('mes_ref, data_venda, loja, metragem_m2'),
     sb.from('metas').select('*'),
+    sb.from('reclamacoes_industria').select('motivo, franquia, data_abertura, created_at'),
   ]);
   if (chamadosRes.error) throw chamadosRes.error;
   if (projetosRes.error) throw projetosRes.error;
   if (vendasRes.error) throw vendasRes.error;
   const metas = metasRes.data || [];
+  const reclamacoesIndustria = sacIndRes.data || [];
 
   const chamados = chamadosRes.data||[], projetos = projetosRes.data||[], vendas = vendasRes.data||[];
 
@@ -3879,14 +3979,22 @@ async function viewDashboard(){
     return `<div class="progress-bar" style="width:100%;margin-top:8px;"><div style="width:${pct}%"></div></div><div style="font-size:10px;color:var(--text-faint);margin-top:3px;">${pct}% da meta (${Number(meta.toFixed ? meta.toFixed(1) : meta)})${periodo.tipo==='ano' ? ' — soma/média das metas mensais do ano' : ''}</div>`;
   }
 
+  const permDash = permissoesAtuais('dashboard');
+  const DASH_SUBABAS = [
+    ['sac','SAC'],
+    ['vendas','Vendas'],
+    ['projetos','Projetos'],
+    ['sacind','SAC ↔ Indústria'],
+    ['anual','Resumo anual (tabela)'],
+  ];
+  const subabasVisiveis = DASH_SUBABAS.filter(([k])=>!!permDash[k]);
+  const abaInicial = (subabasVisiveis[0] || DASH_SUBABAS[0])[0];
+
   const root = document.getElementById('view-root');
   root.innerHTML = `
     <div class="toolbar">
       <div class="dash-subtabs" id="dash-subtabs">
-        <button type="button" class="dash-subtab active" data-tab="sac">SAC</button>
-        <button type="button" class="dash-subtab" data-tab="vendas">Vendas</button>
-        <button type="button" class="dash-subtab" data-tab="projetos">Projetos</button>
-        <button type="button" class="dash-subtab" data-tab="anual">Resumo anual (tabela)</button>
+        ${subabasVisiveis.map(([k,label])=>`<button type="button" class="dash-subtab${k===abaInicial?' active':''}" data-tab="${k}">${label}</button>`).join('')}
       </div>
       <div class="spacer"></div>
       <div class="dash-subtabs" id="periodo-toggle" style="display:none">
@@ -3897,10 +4005,12 @@ async function viewDashboard(){
       <span id="ano-select">${buildSimplePicker(anoAtual, anosList.map(a=>({value:a,label:a})), (v)=>{ anoSelecionado=v; renderTudo(); }, {classeExtra:'dash-period-picker'})}</span>
       ${podeDefinirMetas ? `<button type="button" class="btn" id="btn-definir-metas">🎯 Definir metas</button>` : ''}
     </div>
-    <div id="dash-painel-sac" class="dash-painel"></div>
-    <div id="dash-painel-vendas" class="dash-painel" style="display:none"></div>
-    <div id="dash-painel-projetos" class="dash-painel" style="display:none"></div>
-    <div id="dash-painel-anual" class="dash-painel" style="display:none"></div>
+    ${subabasVisiveis.length ? '' : `<div class="section-note">Nenhuma sub-aba do Dashboard está liberada pro seu papel. Peça a um admin pra ajustar em Usuários &gt; Permissões de abas por papel.</div>`}
+    <div id="dash-painel-sac" class="dash-painel" style="display:${abaInicial==='sac'?'':'none'}"></div>
+    <div id="dash-painel-vendas" class="dash-painel" style="display:${abaInicial==='vendas'?'':'none'}"></div>
+    <div id="dash-painel-projetos" class="dash-painel" style="display:${abaInicial==='projetos'?'':'none'}"></div>
+    <div id="dash-painel-sacind" class="dash-painel" style="display:${abaInicial==='sacind'?'':'none'}"></div>
+    <div id="dash-painel-anual" class="dash-painel" style="display:${abaInicial==='anual'?'':'none'}"></div>
   `;
 
   if (podeDefinirMetas){
@@ -4135,10 +4245,62 @@ async function viewDashboard(){
   // Cada aba (SAC, Vendas, Projetos) lembra sozinha se está em modo Mês ou
   // Ano. O mês/ano escolhidos no seletor são compartilhados entre as abas
   // que estiverem naquele modo.
+  // Painel "SAC ↔ Indústria": período próprio (mês / ano / todo o período),
+  // independente do toggle mês/ano compartilhado pelas outras abas — por
+  // isso tem seu próprio estado e sua própria barrinha de controles.
+  let sacIndPeriodo = { tipo:'mes', mes: thisMonthKey, ano: anoAtual };
+  function reclamacoesDoPeriodo(){
+    if (sacIndPeriodo.tipo === 'todo') return reclamacoesIndustria;
+    return reclamacoesIndustria.filter(r=>{
+      const k = monthKey(r.data_abertura || r.created_at);
+      if (!k) return false;
+      return sacIndPeriodo.tipo==='mes' ? k===sacIndPeriodo.mes : k.startsWith(sacIndPeriodo.ano);
+    });
+  }
+  function contagemPorCampo(lista, campo, grupoMenu){
+    const contagem = {};
+    lista.forEach(r=>{ const v = r[campo] || '(sem informação)'; contagem[v] = (contagem[v]||0)+1; });
+    const pares = Object.entries(contagem).sort((a,b)=>b[1]-a[1]);
+    const cores = pares.map(([v],i)=>{
+      const opcao = opcoesDe(grupoMenu).find(o=>o.valor===v);
+      return opcao ? corMenuParaTema(opcao.cor) : corSerie(i);
+    });
+    return { pares, cores };
+  }
+  function renderSacInd(){
+    const painel = document.getElementById('dash-painel-sacind');
+    if (!painel) return;
+    const lista = reclamacoesDoPeriodo();
+    const motivo = contagemPorCampo(lista, 'motivo', 'sacind_motivo');
+    const franquia = contagemPorCampo(lista, 'franquia', 'chamados_franquia');
+    painel.innerHTML = `
+      <div class="toolbar" style="margin-bottom:16px;">
+        <div class="dash-subtabs" id="sacind-periodo-toggle">
+          <button type="button" class="dash-subtab${sacIndPeriodo.tipo==='mes'?' active':''}" data-sacind-periodo="mes">Mês</button>
+          <button type="button" class="dash-subtab${sacIndPeriodo.tipo==='ano'?' active':''}" data-sacind-periodo="ano">Ano</button>
+          <button type="button" class="dash-subtab${sacIndPeriodo.tipo==='todo'?' active':''}" data-sacind-periodo="todo">Todo o período</button>
+        </div>
+        <div class="spacer"></div>
+        <span id="sacind-mes-select" style="display:${sacIndPeriodo.tipo==='mes'?'':'none'}">${buildSimplePicker(sacIndPeriodo.mes, months.map(m=>({value:m,label:monthLabel(m+'-01')})), (v)=>{ sacIndPeriodo.mes=v; renderSacInd(); }, {classeExtra:'dash-period-picker'})}</span>
+        <span id="sacind-ano-select" style="display:${sacIndPeriodo.tipo==='ano'?'':'none'}">${buildSimplePicker(sacIndPeriodo.ano, anosList.map(a=>({value:a,label:a})), (v)=>{ sacIndPeriodo.ano=v; renderSacInd(); }, {classeExtra:'dash-period-picker'})}</span>
+      </div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Reclamações ${sacIndPeriodo.tipo==='todo'?'no período':sacIndPeriodo.tipo==='mes'?'no mês':'no ano'}</div><div class="kpi-value">${lista.length}</div></div>
+      </div>
+      <div class="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));">
+        <div class="chart-card"><div class="chart-title">Por motivo</div>${svgPieChart(motivo.pares, motivo.cores)}</div>
+        <div class="chart-card"><div class="chart-title">Por franquia</div>${svgPieChart(franquia.pares, franquia.cores)}</div>
+      </div>
+    `;
+    painel.querySelectorAll('[data-sacind-periodo]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ sacIndPeriodo.tipo = btn.dataset.sacindPeriodo; renderSacInd(); });
+    });
+  }
+
   let mesSelecionado = thisMonthKey;
   let anoSelecionado = anoAtual;
   let periodoTipoPorAba = { sac:'mes', vendas:'mes', projetos:'mes' };
-  let abaAtiva = 'sac';
+  let abaAtiva = abaInicial;
   function periodoPara(aba){
     return periodoTipoPorAba[aba]==='ano' ? { tipo:'ano', valor: anoSelecionado } : { tipo:'mes', valor: mesSelecionado };
   }
@@ -4146,11 +4308,12 @@ async function viewDashboard(){
     renderSac(periodoPara('sac'));
     renderVendas(periodoPara('vendas'));
     renderProjetos(periodoPara('projetos'));
+    renderSacInd();
   }
   renderTudo();
 
   function atualizarControlesPeriodo(){
-    const mostrarToggle = abaAtiva !== 'anual';
+    const mostrarToggle = abaAtiva !== 'anual' && abaAtiva !== 'sacind';
     document.getElementById('periodo-toggle').style.display = mostrarToggle ? '' : 'none';
     const tipoAtivo = periodoTipoPorAba[abaAtiva] || 'mes';
     document.querySelectorAll('#periodo-toggle .dash-subtab').forEach(b=>b.classList.toggle('active', b.dataset.periodo===tipoAtivo));
@@ -4175,7 +4338,7 @@ async function viewDashboard(){
       document.querySelectorAll('#dash-subtabs .dash-subtab').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       abaAtiva = btn.dataset.tab;
-      ['sac','vendas','projetos','anual'].forEach(t=>{
+      ['sac','vendas','projetos','anual','sacind'].forEach(t=>{
         document.getElementById('dash-painel-'+t).style.display = (t===abaAtiva) ? '' : 'none';
       });
       atualizarControlesPeriodo();
@@ -4189,17 +4352,19 @@ async function viewDashboard(){
   // Atualização silenciosa: refaz só a busca dos números e redesenha os
   // painéis (sem recriar a barra de abas/período), então não pisca a tela.
   currentSilentRefresh = async ()=>{
-    const [novoChamados, novoProjetos, novoVendas, novasMetas] = await Promise.all([
+    const [novoChamados, novoProjetos, novoVendas, novasMetas, novoSacInd] = await Promise.all([
       sb.from('chamados_sac').select('mes_ref, data_abertura, nota_nps, tempo_resolucao_dias, status, franquia'),
       sb.from('projetos').select('mes_ref, percentual_conclusao, status, data_conclusao_real'),
       sb.from('vendas_expansao').select('mes_ref, data_venda, loja, metragem_m2'),
       sb.from('metas').select('*'),
+      sb.from('reclamacoes_industria').select('motivo, franquia, data_abertura, created_at'),
     ]);
     if (novoChamados.error || novoProjetos.error || novoVendas.error) return;
     chamados.length = 0; chamados.push(...(novoChamados.data||[]));
     projetos.length = 0; projetos.push(...(novoProjetos.data||[]));
     vendas.length = 0; vendas.push(...(novoVendas.data||[]));
     metas.length = 0; metas.push(...(novasMetas.data||[]));
+    reclamacoesIndustria.length = 0; reclamacoesIndustria.push(...(novoSacInd.data||[]));
     renderTudo();
   };
 }
