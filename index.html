@@ -142,6 +142,9 @@ aside{ background:var(--surface); border-right:1px solid var(--border); display:
 .side-brand .brand-name{font-weight:800; font-size:14.5px; line-height:1.25;}
 .nav-scroll{ flex:1; min-height:0; overflow-y:auto; }
 nav.tabs{display:flex; flex-direction:column; gap:2px; padding:0 10px;}
+.nav-divider{ height:1px; background:var(--border-soft); margin:9px 8px; flex-shrink:0; }
+.nav-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--c-orange); margin-left:8px; vertical-align:middle; box-shadow:0 0 0 3px rgba(232,89,12,.18); animation:navDotPulse 1.8s ease-in-out infinite; }
+@keyframes navDotPulse{ 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.25); } }
 .tab-btn{ display:flex; align-items:center; gap:10px; padding:10px 13px; background:transparent; border:none; border-radius:10px; color:var(--text-dim); text-align:left; font-size:12.5px; font-weight:600; transition:background .2s var(--ease-out), color .2s var(--ease-out), padding-left .22s var(--ease-out), box-shadow .2s var(--ease-out), transform .12s var(--ease-spring); position:relative; }
 .tab-btn::before{ content:''; position:absolute; left:5px; top:50%; width:3px; height:0; border-radius:99px; background:var(--accent); transform:translateY(-50%); transition:height .22s var(--ease-out); }
 .tab-btn:hover{color:var(--text); background:var(--bg-soft); padding-left:16px;}
@@ -311,6 +314,19 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 
 .row-actions{ text-align:left; }
 .row-actions .icon-btn + .icon-btn{ margin-left:6px; }
+
+/* Notificações individuais (por usuário) — "Novo" na linha inteira,
+   "Alterado" grudado no campo específico que mudou. */
+.notif-cell{ text-align:center; vertical-align:middle; }
+.notif-badge{ display:inline-flex; align-items:center; gap:6px; font-size:10px; font-weight:800; line-height:1; padding:4px 5px 4px 9px; border-radius:99px; animation:cardIn .25s var(--ease-out) both; transition:opacity .16s var(--ease-out), transform .16s var(--ease-out); white-space:nowrap; }
+.notif-badge-novo{ background:var(--accent-soft); color:var(--accent); }
+.notif-badge-editado{ background:var(--accent-2-soft); color:var(--accent-2); }
+.notif-badge-wrap{ display:block; margin-bottom:5px; }
+.notif-lido-btn{ font-size:9px; font-weight:800; text-transform:uppercase; letter-spacing:.03em; background:var(--surface); border:none; border-radius:99px; padding:3px 8px; cursor:pointer; color:inherit; box-shadow:0 1px 2px rgba(0,0,0,.08); transition:transform .12s var(--ease-spring); }
+.notif-lido-btn:hover{ transform:scale(1.07); }
+.notif-lido-btn:active{ transform:scale(.9); }
+.notif-saindo{ opacity:0; transform:scale(.85); }
+.img-thumb-wrap .notif-badge{ position:absolute; top:-9px; left:4px; z-index:3; }
 .icon-btn{ border:1px solid var(--border); background:transparent; color:var(--text-dim); padding:5px 9px; font-size:12px; border-radius:var(--r-sm); font-weight:600; transition:background .15s var(--ease-out), color .15s var(--ease-out), border-color .15s var(--ease-out), opacity .15s var(--ease-out), transform .12s var(--ease-spring); }
 .icon-btn:hover{color:#fff; background:var(--accent); border-color:var(--accent);}
 .icon-btn:active{transform:scale(.94);}
@@ -377,7 +393,7 @@ td.cell-colored > .fill{ display:flex; align-items:center; height:100%; min-heig
 .checklist-grupo.recolhido .checklist-corpo-wrap{ grid-template-rows:0fr; }
 .checklist-corpo-inner{ overflow:hidden; min-height:0; }
 .checklist-itens{ margin-top:8px; }
-.checklist-item{ display:flex; align-items:center; gap:11px; padding:9px 8px; border-bottom:1px solid var(--border-soft); font-size:13.5px; cursor:pointer; border-radius:8px; transition:background .14s var(--ease-out); }
+.checklist-item{ position:relative; display:flex; align-items:center; gap:11px; padding:9px 8px; border-bottom:1px solid var(--border-soft); font-size:13.5px; cursor:pointer; border-radius:8px; transition:background .14s var(--ease-out); }
 .checklist-item:last-child{ border-bottom:none; }
 .checklist-item:hover{ background:var(--surface); }
 .checklist-item.arrastavel{ cursor:grab; }
@@ -828,6 +844,8 @@ async function bootAfterLogin(){
   await loadConfigVisual();
   await loadPermissoesAbas();
   buildNav();
+  atualizarBolinhaNotificacoes();
+  setInterval(atualizarBolinhaNotificacoes, 45000); // só a contagem da bolinha — não recarrega dado nenhum de tela
   const abasPermitidas = abasPermitidasPara(currentProfile.role).map(([key])=>key);
   const preferida = currentProfile.role.startsWith('usuario') ? 'minhas-tarefas' : 'dashboard';
   const firstView = abasPermitidas.includes(preferida) ? preferida : (abasPermitidas[0] || 'minhas-tarefas');
@@ -849,6 +867,7 @@ async function atualizarManualmente(){
   await navigateTo(currentView, { silencioso: true });
   const novoWrap = document.getElementById('view-root').querySelector('.table-wrap');
   if (novoWrap) novoWrap.scrollTop = scrollTop;
+  atualizarBolinhaNotificacoes();
   if (btn){ btn.disabled = false; btn.textContent = '⟳ Atualizar'; }
   toast('Dados atualizados.');
 }
@@ -964,14 +983,24 @@ async function loadProfilesCache(){
 const ABAS_DISPONIVEIS = [
   ['dashboard','Dashboard'],
   ['minhas-tarefas','Minhas Tarefas'],
-  ['chamados','Chamados SAC'],
   ['projetos','Projetos'],
+  ['chamados','Chamados SAC'],
+  ['sac-industria','SAC ↔ Indústria'],
   ['vendas','Vendas / Expansão'],
   ['programacao-carregamento','Programação Carregamento'],
-  ['sac-industria','SAC ↔ Indústria'],
   ['opcoes-menu','Opções dos Menus'],
   ['usuarios','Usuários'],
-  ['auditoria','Auditoria'],
+  ['auditoria','Log de Auditoria'],
+];
+
+// Agrupamento visual do menu lateral — cada sub-array vira um "bloco"
+// separado por uma linha horizontal. Abas sem permissão simplesmente somem
+// da lista; se isso esvaziar um bloco inteiro, nenhuma linha sobra no lugar.
+const NAV_GRUPOS = [
+  ['dashboard'],
+  ['minhas-tarefas','projetos','chamados','sac-industria'],
+  ['vendas','programacao-carregamento'],
+  ['opcoes-menu','usuarios','auditoria'],
 ];
 
 // Cargos do sistema. "engenharia" cobre o time de Engenharia (e SAC, no caso
@@ -1135,11 +1164,24 @@ function buildNav(){
   const nav = document.getElementById('nav-tabs');
   nav.innerHTML = '';
   const items = abasPermitidasPara(currentProfile.role);
-  items.forEach(([key,label])=>{
-    const b = document.createElement('button');
-    b.className = 'tab-btn'; b.dataset.view = key; b.textContent = label;
-    b.onclick = ()=> navigateTo(key);
-    nav.appendChild(b);
+  const porChave = new Map(items);
+  let algumGrupoRenderizado = false;
+  NAV_GRUPOS.forEach(grupoChaves=>{
+    const doGrupo = grupoChaves.filter(k=>porChave.has(k));
+    if (!doGrupo.length) return;
+    if (algumGrupoRenderizado){
+      const divisor = document.createElement('div');
+      divisor.className = 'nav-divider';
+      nav.appendChild(divisor);
+    }
+    doGrupo.forEach(key=>{
+      const b = document.createElement('button');
+      b.className = 'tab-btn'; b.dataset.view = key;
+      b.innerHTML = `${escapeHtml(porChave.get(key))}<span class="nav-dot" data-nav-dot="${key}" style="display:none;"></span>`;
+      b.onclick = ()=> navigateTo(key);
+      nav.appendChild(b);
+    });
+    algumGrupoRenderizado = true;
   });
 }
 function setActiveTab(key){ document.querySelectorAll('.tab-btn[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view === key)); }
@@ -1185,6 +1227,7 @@ async function navigateTo(key, opts){
   root.classList.remove('view-anim');
   void root.offsetWidth; // força reflow pra reiniciar a animação a cada troca de aba
   root.classList.add('view-anim');
+  atualizarBolinhaNotificacoes();
 }
 
 async function saveField(table, id, field, value){
@@ -1232,6 +1275,7 @@ const TABLE_CONFIG = {
     title: 'SAC ↔ Indústria', sub: 'Reclamações de franqueados registradas pelo SAC para a Indústria resolver.',
     aba: 'sac-industria',
     respTable: 'reclamacoes_industria_responsaveis', respFk: 'reclamacao_id', detalhavel: true,
+    notificacoes: true, notifEventosTable:'reclamacoes_industria_eventos', notifLidosTable:'reclamacoes_industria_eventos_lidos', notifFk:'reclamacao_id',
     fields: [
       {key:'numero_reclamacao', label:'Nº', edit:'text', w:70, readonly:true},
       {key:'franquia', label:'Franquia', edit:'select', group:'chamados_franquia'},
@@ -1285,6 +1329,52 @@ function registroEhDoProprio(row){
 // pode ver "só o próprio" e o registro é dela.
 function registroVisivel(perm, row){
   return !!(perm && perm.ver_outros) || !!(perm && perm.ver_proprio && registroEhDoProprio(row));
+}
+
+// ── Notificações individuais (por usuário) ─────────────────────────────
+// Marca um ou vários eventos como lidos de uma vez pra QUEM ESTÁ LOGADO
+// agora (não afeta outras pessoas) e some com o(s) selo(s), com uma
+// pequena animação de saída. Aceita string única ou array de ids — usar
+// array é o que evita a mesma célula "acumular" selos quando o campo foi
+// editado mais de uma vez: todas as edições daquele campo são marcadas
+// como lidas juntas, de uma vez só.
+async function marcarNotifLida(tabelaLidos, eventoIds, badgeEls){
+  const ids = (Array.isArray(eventoIds) ? eventoIds : [eventoIds]).filter(Boolean);
+  if (!ids.length) return true;
+  const linhas = ids.map(id=>({ evento_id: id, usuario_id: currentUser.id }));
+  const { error } = await sb.from(tabelaLidos).upsert(linhas, { onConflict:'evento_id,usuario_id' });
+  if (error){ toast('Erro: '+error.message, true); return false; }
+  (badgeEls||[]).forEach(badge=>{
+    badge.classList.add('notif-saindo');
+    setTimeout(()=>badge.remove(), 170);
+  });
+  atualizarBolinhaNotificacoes();
+  return true;
+}
+
+// Recalcula se sobrou alguma notificação não lida (em qualquer lugar — a
+// tabela ou o modal de Detalhes) e liga/desliga a bolinha laranja do menu
+// lateral. Chamada depois de qualquer "lido", ao clicar em "Atualizar", ao
+// entrar no sistema, e por um intervalo leve só pra essa contagem (não
+// recarrega dado nenhum da tela, é uma consulta bem pequena).
+async function atualizarBolinhaNotificacoes(){
+  const dot = document.querySelector('.nav-dot[data-nav-dot="sac-industria"]');
+  if (!dot) return;
+  try{
+    const cfg = TABLE_CONFIG['reclamacoes_industria'];
+    const perm = permissoesTabela('reclamacoes_industria');
+    if (!perm.ver_proprio && !perm.ver_outros){ dot.style.display = 'none'; return; }
+    const { data: registros } = await sb.from('reclamacoes_industria').select('id, criado_por');
+    const visiveis = new Set((registros||[]).filter(r=>registroVisivel(perm, r)).map(r=>r.id));
+    if (!visiveis.size){ dot.style.display = 'none'; return; }
+    const { data: eventos } = await sb.from(cfg.notifEventosTable).select('id, criado_por, reclamacao_id').in('reclamacao_id', Array.from(visiveis));
+    const relevantes = (eventos||[]).filter(e=>e.criado_por !== currentUser.id);
+    if (!relevantes.length){ dot.style.display = 'none'; return; }
+    const { data: lidos } = await sb.from(cfg.notifLidosTable).select('evento_id').eq('usuario_id', currentUser.id);
+    const lidosSet = new Set((lidos||[]).map(l=>l.evento_id));
+    const naoLidos = relevantes.some(e=>!lidosSet.has(e.id));
+    dot.style.display = naoLidos ? '' : 'none';
+  }catch(e){ /* a bolinha nunca deve travar o resto do app */ }
 }
 
 function renderSelectCell(table, row, field){
@@ -1915,6 +2005,39 @@ async function viewTabela(tableName){
   // silencioso etc.) segura essa mesma referência e faz unshift/push nela.
   for (let i = data.length - 1; i >= 0; i--){ if (!registroVisivel(perm, data[i])) data.splice(i, 1); }
 
+  // Notificações individuais (por usuário): "Novo" quando o registro
+  // inteiro é novo, "Alterado" grudado no campo específico que mudou, e um
+  // pontinho no botão "detalhes" quando tem algo não lido lá dentro
+  // (checklist/imagens) — tudo isso some só quando ESTA pessoa clica em
+  // "lido" (não afeta os outros usuários, e nunca notifica quem fez a
+  // própria mudança). Cada campo guarda uma LISTA de ids de evento (não só
+  // um) — se o mesmo campo foi editado várias vezes, um único clique em
+  // "lido" marca todas aquelas edições como lidas de uma vez, em vez do
+  // selo "reaparecer" a cada refresh por causa de uma edição mais antiga
+  // que ficou pra trás sem ser marcada.
+  let eventosPorRegistro = {}; // eventosPorRegistro[registro.id] = { novo:[ids], campos:{chave:[ids]}, detalhes:[ids] }
+  async function carregarNotificacoes(){
+    const mapa = {};
+    if (!cfg.notificacoes || !data.length) return mapa;
+    const ids = data.map(r=>r.id);
+    const [{ data: eventos }, { data: lidos }] = await Promise.all([
+      sb.from(cfg.notifEventosTable).select('*').in(cfg.notifFk, ids),
+      sb.from(cfg.notifLidosTable).select('evento_id').eq('usuario_id', currentUser.id),
+    ]);
+    const lidosSet = new Set((lidos||[]).map(l=>l.evento_id));
+    (eventos||[]).forEach(ev=>{
+      if (ev.criado_por === currentUser.id) return; // ninguém é notificado da própria mudança
+      if (lidosSet.has(ev.id)) return; // já marcado como lido por esta pessoa
+      const chaveReg = ev[cfg.notifFk];
+      const reg = mapa[chaveReg] || (mapa[chaveReg] = { novo:[], campos:{}, detalhes:[] });
+      if (ev.tipo === 'novo') reg.novo.push(ev.id);
+      else if (ev.item_id) reg.detalhes.push(ev.id); // mudança dentro do "Detalhes" (checklist/imagem)
+      else if (ev.campo) (reg.campos[ev.campo] = reg.campos[ev.campo] || []).push(ev.id);
+    });
+    return mapa;
+  }
+  if (cfg.notificacoes) eventosPorRegistro = await carregarNotificacoes();
+
   const root = document.getElementById('view-root');
   root.innerHTML = `
     <div class="toolbar">
@@ -1926,7 +2049,7 @@ async function viewTabela(tableName){
     <div class="section-note" style="margin-bottom:10px;">Clique no nome de uma coluna pra ordenar. Segure <b>Shift</b> pra ordenar por várias colunas ao mesmo tempo (a ordem do clique define a prioridade). Clique no ▾ pra filtrar valores específicos daquela coluna. Suas escolhas ficam salvas até você mesmo limpar.</div>
     <div class="table-wrap tabela-principal"><table>
       <thead>
-        <tr>${cfg.detalhavel?'<th></th>':''}${cfg.fields.map(f=>`<th><div class="th-inner">
+        <tr>${cfg.notificacoes?'<th></th>':''}${cfg.detalhavel?'<th></th>':''}${cfg.fields.map(f=>`<th><div class="th-inner">
           <button type="button" class="th-sort" data-key="${f.key}">${f.label}<span class="sort-arrow" data-arrow="${f.key}"></span></button>
           <button type="button" class="th-filtro" data-key="${f.key}" title="Filtrar esta coluna">▾</button>
         </div></th>`).join('')}${mostraColunaAcoes?'<th></th>':''}</tr>
@@ -2002,8 +2125,9 @@ async function viewTabela(tableName){
 
   function render(rows){
     const tbody = document.getElementById('tbody');
-    if (!rows.length){ tbody.innerHTML = `<tr class="empty-row"><td colspan="${cfg.fields.length+1+(cfg.detalhavel?1:0)}">Nenhum registro encontrado.</td></tr>`; return; }
+    if (!rows.length){ tbody.innerHTML = `<tr class="empty-row"><td colspan="${cfg.fields.length+1+(cfg.detalhavel?1:0)+(cfg.notificacoes?1:0)}">Nenhum registro encontrado.</td></tr>`; return; }
     tbody.innerHTML = rows.map(r=>{
+      const reg = cfg.notificacoes ? eventosPorRegistro[r.id] : null;
       const cells = cfg.fields.map(f=>{
         const editavel = podeEditarAlgo && !f.readonly && registroVisivel(perm, r);
         const content = editavel ? renderCell(tableName, r, f)
@@ -2012,13 +2136,43 @@ async function viewTabela(tableName){
              : f.edit==='date' ? fmtDate(r[f.key])
              : (r[f.key] ?? '—'));
         const cls = f.edit==='select' ? ' class="cell-colored"' : '';
-        return `<td${cls}>${content}</td>`;
+        const idsCampo = reg && reg.campos[f.key];
+        // O selo fica dentro de um "wrap" de bloco — remover ESSE elemento
+        // (em vez de só o <span> por dentro) some com o espaço reservado
+        // também, e a linha volta sozinha pro tamanho normal.
+        const badgeCampo = (idsCampo && idsCampo.length) ? `<div class="notif-badge-wrap" data-evento-badge-group="${idsCampo.join(',')}"><span class="notif-badge notif-badge-editado">Alterado <button type="button" class="notif-lido-btn" data-evento-ids="${idsCampo.join(',')}">lido</button></span></div>` : '';
+        return `<td${cls}>${badgeCampo}${content}</td>`;
       }).join('');
-      const detalhesCell = cfg.detalhavel ? `<td class="row-actions"><button class="icon-btn" onclick="abrirDetalhes('${tableName}','${r.id}')">detalhes</button></td>` : '';
+      const temNovo = reg && reg.novo.length;
+      const notifCell = cfg.notificacoes ? `<td class="notif-cell">${temNovo ? `<span class="notif-badge notif-badge-novo" data-evento-badge-group="${reg.novo.join(',')}">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${reg.novo.join(',')}">lido</button></span>` : ''}</td>` : '';
+      const temDetalhesNovo = reg && reg.detalhes.length;
+      const detalhesCell = cfg.detalhavel ? `<td class="row-actions"><button class="icon-btn" onclick="abrirDetalhes('${tableName}','${r.id}')" title="${temDetalhesNovo?'Tem alteração não lida no Detalhes':''}">detalhes${temDetalhesNovo?'<span class="nav-dot" style="margin-left:6px;"></span>':''}</button></td>` : '';
       const podeExcluirRow = podeExcluirAlgo && registroVisivel(perm, r);
       const actions = mostraColunaAcoes ? `<td class="row-actions">${podeExcluirRow ? `<button class="icon-btn" onclick="deleteRow('${tableName}','${r.id}')">excluir</button>` : ''}</td>` : '';
-      return `<tr>${detalhesCell}${cells}${actions}</tr>`;
+      return `<tr>${notifCell}${detalhesCell}${cells}${actions}</tr>`;
     }).join('');
+
+    if (cfg.notificacoes){
+      tbody.querySelectorAll('.notif-lido-btn').forEach(btn=>{
+        btn.addEventListener('click', async (e)=>{
+          e.stopPropagation();
+          btn.disabled = true;
+          const eventoIds = (btn.dataset.eventoIds||'').split(',').filter(Boolean);
+          const badges = Array.from(document.querySelectorAll(`[data-evento-badge-group="${btn.dataset.eventoIds}"]`));
+          const ok = await marcarNotifLida(cfg.notifLidosTable, eventoIds, badges);
+          if (!ok){ btn.disabled = false; return; }
+          // Some do estado em memória também, sem precisar recarregar a tabela inteira.
+          Object.values(eventosPorRegistro).forEach(reg=>{
+            reg.novo = reg.novo.filter(id=>!eventoIds.includes(id));
+            reg.detalhes = reg.detalhes.filter(id=>!eventoIds.includes(id));
+            Object.keys(reg.campos).forEach(k=>{
+              reg.campos[k] = reg.campos[k].filter(id=>!eventoIds.includes(id));
+              if (!reg.campos[k].length) delete reg.campos[k];
+            });
+          });
+        });
+      });
+    }
   }
 
   aplicarFiltrosAtual = aplicarFiltrosOrdenacao;
@@ -2179,6 +2333,7 @@ async function viewTabela(tableName){
       } else { data.forEach(r=>{ r.__resp_ids = []; }); }
     }
     for (let i = data.length - 1; i >= 0; i--){ if (!registroVisivel(perm, data[i])) data.splice(i, 1); }
+    if (cfg.notificacoes) eventosPorRegistro = await carregarNotificacoes();
     await loadProfilesCache();
     aplicarFiltrosOrdenacao();
   };
@@ -3622,6 +3777,7 @@ const DETALHE_CONFIG = {
     imagensTable: 'reclamacoes_industria_imagens', imagensFk: 'reclamacao_id',
     campoDescricao: 'descricao_detalhada',
     campoTipoTemplate: 'motivo', rotuloTipoTemplate: 'Motivo',
+    notificacoes: true, notifEventosTable:'reclamacoes_industria_eventos', notifLidosTable:'reclamacoes_industria_eventos_lidos',
   },
 };
 
@@ -3636,6 +3792,42 @@ window.abrirDetalhes = async function(tabela, id){
   ]);
   if (errReg || !registro) return toast('Não foi possível carregar os detalhes.', true);
   if (!profilesCache.length) await loadProfilesCache();
+
+  // Notificações individuais (descrição, checklists e imagens) — mesma
+  // lógica da tabela: só aparece pra quem NÃO fez a mudança, e some quando
+  // essa pessoa clica em "lido" (não afeta os outros). Cada item/campo
+  // guarda uma LISTA de ids — se mudou mais de uma vez, um clique só em
+  // "lido" resolve tudo de uma vez, sem sobrar nada pra "reaparecer" depois.
+  let eventosItemMap = {};   // por item_id (checklist, checklist_grupo ou imagem)
+  let eventosDescricao = []; // ids de evento da "Descrição da tarefa"
+  if (cfg.notificacoes){
+    const [{ data: eventosDetalhe }, { data: lidosDetalhe }] = await Promise.all([
+      sb.from(cfg.notifEventosTable).select('*').eq('reclamacao_id', id),
+      sb.from(cfg.notifLidosTable).select('evento_id').eq('usuario_id', currentUser.id),
+    ]);
+    const lidosSet = new Set((lidosDetalhe||[]).map(l=>l.evento_id));
+    (eventosDetalhe||[]).forEach(ev=>{
+      if (ev.criado_por === currentUser.id) return;
+      if (lidosSet.has(ev.id)) return;
+      if (ev.tipo === 'edicao' && ev.campo === cfg.campoDescricao){
+        eventosDescricao.push(ev.id);
+        return;
+      }
+      if (!ev.item_id) return; // outros campos (status, franquia...) já aparecem na tabela, não aqui
+      const atual = eventosItemMap[ev.item_id] || (eventosItemMap[ev.item_id] = { ids:[], tipo: ev.tipo, quando: ev.criado_em });
+      atual.ids.push(ev.id);
+      if (!atual.quando || ev.criado_em > atual.quando){ atual.tipo = ev.tipo; atual.quando = ev.criado_em; }
+    });
+  }
+  function badgeNotifItem(itemId){
+    const ev = eventosItemMap[itemId];
+    if (!ev || !ev.ids.length) return '';
+    const rotulo = ev.tipo==='checklist_criado' ? 'Novo item' : ev.tipo==='checklist_grupo_criado' ? 'Novo checklist' : ev.tipo==='imagem_adicionada' ? 'Nova' : 'Alterado';
+    return `<span class="notif-badge notif-badge-editado" data-evento-badge-group="${ev.ids.join(',')}">${rotulo} <button type="button" class="notif-lido-btn" data-evento-ids="${ev.ids.join(',')}">lido</button></span>`;
+  }
+  function todosOsEventosNaoLidos(){
+    return [...eventosDescricao, ...Object.values(eventosItemMap).flatMap(ev=>ev.ids)];
+  }
 
   const nomesResp = profilesCache.filter(p=>(resp||[]).map(r=>r.profile_id).includes(p.id)).map(p=>p.nome).join(', ') || 'Vazio';
   const corStatus = registro.status ? corDaOpcao(cfg.statusGrupo, registro.status) : 'var(--text-faint)';
@@ -3659,6 +3851,7 @@ window.abrirDetalhes = async function(tabela, id){
     if (!itens.length) return '<div class="section-note" style="margin:8px 0 0;">Nenhum item ainda.</div>';
     return itens.map(it=>`
       <div class="checklist-item" data-id="${it.id}">
+        ${badgeNotifItem(it.id)}
         <span class="arraste-handle" title="Arraste pra reordenar">⠿</span>
         <input type="checkbox" ${it.concluido?'checked':''} />
         <span class="${it.concluido?'checklist-done':''}">${escapeHtml(it.texto)}</span>
@@ -3672,6 +3865,7 @@ window.abrirDetalhes = async function(tabela, id){
       <div class="checklist-grupo-head">
         <button type="button" class="icon-btn checklist-toggle" data-toggle-grupo="${g.id}" title="Recolher/Expandir checklist" aria-expanded="true"><span class="chev">▾</span></button>
         <input type="text" class="cell-input checklist-grupo-nome" data-grupo-nome="${g.id}" value="${escapeHtml(g.nome)}" style="font-weight:800;font-size:13.5px;max-width:220px;" />
+        ${badgeNotifItem(g.id)}
         <div class="progress-bar" style="width:110px;"><div style="width:${pct}%"></div></div>
         <span class="checklist-grupo-pct" style="font-size:11px;color:var(--text-faint);min-width:32px;">${pct}%</span>
         <button type="button" class="icon-btn checklist-grupo-dup" data-dup-grupo="${g.id}" style="margin-left:auto;" title="Duplicar este checklist com todos os itens">⧉ Duplicar</button>
@@ -3692,6 +3886,7 @@ window.abrirDetalhes = async function(tabela, id){
     if (!imgs.length) return '<div class="section-note">Nenhuma imagem ainda.</div>';
     return imgs.map(img=>`
       <div class="img-thumb-wrap" data-id="${img.id}">
+        ${badgeNotifItem(img.id)}
         <img src="${escapeHtml(converterLinkDrive(img.url))}" alt="Imagem" class="img-thumb" onerror="this.parentElement.classList.add('img-erro')" onclick="abrirLightbox(this.src)" />
         <div class="img-erro-msg">Não carregou. O arquivo precisa estar como "Qualquer pessoa com o link" no Drive.</div>
         <button type="button" class="img-thumb-del" data-del-img="${img.id}" title="Remover">×</button>
@@ -3700,9 +3895,13 @@ window.abrirDetalhes = async function(tabela, id){
 
   const modal = document.getElementById('modal-content');
   modal.classList.add('modal-wide');
+  const totalNaoLidos = todosOsEventosNaoLidos();
   modal.innerHTML = `
     <div class="modal-fixed-head">
-      <h3 style="margin-bottom:4px;">${escapeHtml(tituloExibido)}</h3>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+        <h3 style="margin-bottom:4px;">${escapeHtml(tituloExibido)}</h3>
+        ${(cfg.notificacoes && totalNaoLidos.length) ? `<button type="button" class="btn" id="btn-marcar-tudo-lido" style="width:auto;flex-shrink:0;">✓ Marcar tudo como lido (${totalNaoLidos.length})</button>` : ''}
+      </div>
       <div style="display:flex;gap:26px;flex-wrap:wrap;">
         <div><div class="kpi-label" style="margin-bottom:4px;">Responsável</div><div style="font-size:13px;">${escapeHtml(nomesResp)}</div></div>
         <div><div class="kpi-label" style="margin-bottom:4px;">Status</div><div><span class="badge" style="background-color:${corMenuParaTema(corStatus)};color:${textoParaCorDeMenu(corStatus)}">${escapeHtml(registro.status||'Vazio')}</span></div></div>
@@ -3712,6 +3911,7 @@ window.abrirDetalhes = async function(tabela, id){
 
     <div class="modal-scroll-body">
       <div class="field"><label>Descrição da tarefa</label>
+        ${eventosDescricao.length ? `<div class="notif-badge-wrap" data-evento-badge-group="${eventosDescricao.join(',')}"><span class="notif-badge notif-badge-editado">Alterada <button type="button" class="notif-lido-btn" data-evento-ids="${eventosDescricao.join(',')}">lido</button></span></div>` : ''}
         <textarea class="cell-input" id="detalhe-descricao" rows="3" style="width:100%;">${escapeHtml(registro[cfg.campoDescricao]||'')}</textarea>
       </div>
 
@@ -3740,6 +3940,44 @@ window.abrirDetalhes = async function(tabela, id){
     <div class="modal-fixed-foot"><button class="btn btn-ghost" onclick="closeModal()">Fechar</button></div>
   `;
   document.getElementById('modal-backdrop').classList.add('active');
+
+  if (cfg.notificacoes){
+    let restantes = totalNaoLidos.length;
+    function atualizarContadorTudoLido(qtdMarcada){
+      restantes -= qtdMarcada;
+      const btnTudo = document.getElementById('btn-marcar-tudo-lido');
+      if (!btnTudo) return;
+      if (restantes <= 0){ btnTudo.remove(); return; }
+      btnTudo.textContent = `✓ Marcar tudo como lido (${restantes})`;
+    }
+    modal.querySelectorAll('.notif-lido-btn').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        btn.disabled = true;
+        const eventoIds = (btn.dataset.eventoIds||'').split(',').filter(Boolean);
+        const badges = Array.from(modal.querySelectorAll(`[data-evento-badge-group="${btn.dataset.eventoIds}"]`));
+        const ok = await marcarNotifLida(cfg.notifLidosTable, eventoIds, badges);
+        if (!ok){ btn.disabled = false; return; }
+        atualizarContadorTudoLido(eventoIds.length);
+        // Atualiza a tabela por trás (silenciosamente) pra sumir com o
+        // pontinho no botão "detalhes" da linha, sem precisar fechar e
+        // reabrir nada.
+        if (typeof currentSilentRefresh === 'function' && currentSilentRefresh) currentSilentRefresh();
+      });
+    });
+
+    const btnTudo = document.getElementById('btn-marcar-tudo-lido');
+    if (btnTudo){
+      btnTudo.addEventListener('click', async ()=>{
+        btnTudo.disabled = true;
+        const badges = Array.from(modal.querySelectorAll('[data-evento-badge-group]'));
+        const ok = await marcarNotifLida(cfg.notifLidosTable, totalNaoLidos, badges);
+        if (!ok){ btnTudo.disabled = false; return; }
+        btnTudo.remove();
+        if (typeof currentSilentRefresh === 'function' && currentSilentRefresh) currentSilentRefresh();
+      });
+    }
+  }
 
   function ligarItem(itemEl, grupoId){
     const cb = itemEl.querySelector('input[type=checkbox]');
