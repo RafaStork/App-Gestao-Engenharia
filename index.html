@@ -189,6 +189,8 @@ main{ height:100vh; overflow:hidden; display:flex; flex-direction:column; paddin
 }
 
 .toolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px; align-items:center; flex-shrink:0;}
+.filtro-nao-vistos{ display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:600; color:var(--text-dim); cursor:pointer; user-select:none; }
+.filtro-nao-vistos input{ width:15px; height:15px; accent-color:var(--accent); cursor:pointer; }
 .toolbar select, .toolbar input{ background:var(--surface); border:1px solid var(--border); color:var(--text); padding:8px 10px; font-size:13px; border-radius:8px; transition:border-color .15s ease, box-shadow .15s ease; }
 .toolbar select:focus, .toolbar input:focus{ border-color:var(--accent); box-shadow:var(--ring); outline:none; }
 .spacer{flex:1;}
@@ -2082,12 +2084,43 @@ async function viewTabela(tableName){
     btnTudo.textContent = `✓ Marcar tudo como lido (${total})`;
   }
 
+  const chaveEstado = `tabela_estado_${tableName}_${currentUser.id}`;
+  const state = { busca:'', colFiltros:{}, sortRules:[], somenteNaoVistos:false }; // colFiltros[key] = Set de valores a mostrar (ausente = sem filtro)
+
+  function salvarEstado(){
+    const colFiltrosSerializado = {};
+    Object.entries(state.colFiltros).forEach(([k,set])=>{ colFiltrosSerializado[k] = Array.from(set); });
+    localStorage.setItem(chaveEstado, JSON.stringify({ busca: state.busca, colFiltros: colFiltrosSerializado, sortRules: state.sortRules, somenteNaoVistos: state.somenteNaoVistos }));
+  }
+  function carregarEstado(){
+    try{
+      const raw = localStorage.getItem(chaveEstado);
+      if (!raw) return;
+      const obj = JSON.parse(raw);
+      state.busca = obj.busca || '';
+      state.sortRules = obj.sortRules || [];
+      state.somenteNaoVistos = !!obj.somenteNaoVistos;
+      state.colFiltros = {};
+      Object.entries(obj.colFiltros || {}).forEach(([k,arr])=>{ state.colFiltros[k] = new Set(arr); });
+    }catch(e){ /* estado salvo inválido — ignora e começa limpo */ }
+  }
+  carregarEstado();
+
+  // Um registro "tem algo não visto" se sobrar qualquer notificação
+  // pendente nele — linha nova, campo alterado ou coisa no Detalhes.
+  function temNaoVisto(r){
+    if (!cfg.notificacoes) return false;
+    const reg = eventosPorRegistro[r.id];
+    return !!(reg && (reg.novo.length || reg.detalhes.length || Object.keys(reg.campos).length));
+  }
+
   const root = document.getElementById('view-root');
   root.innerHTML = `
     <div class="toolbar">
       <input type="text" id="filter-text" placeholder="Buscar em tudo..." style="min-width:220px" />
       <button class="btn" id="btn-limpar-filtros" type="button">Limpar filtros e ordenação</button>
       <div class="spacer"></div>
+      ${cfg.notificacoes ? `<label class="filtro-nao-vistos"><input type="checkbox" id="chk-nao-vistos" ${state.somenteNaoVistos?'checked':''} /> Mostrar apenas não vistos</label>` : ''}
       ${cfg.notificacoes ? `<button class="btn" id="btn-marcar-tudo-lido-tabela" style="width:auto;display:${todosOsEventosDaTabela().length?'':'none'}">✓ Marcar tudo como lido (${todosOsEventosDaTabela().length})</button>` : ''}
       ${podeCriar ? `<button class="btn btn-primary" id="btn-new" style="width:auto">+ Novo</button>` : ''}
     </div>
@@ -2102,27 +2135,6 @@ async function viewTabela(tableName){
       <tbody id="tbody"></tbody>
     </table></div>
   `;
-
-  const chaveEstado = `tabela_estado_${tableName}_${currentUser.id}`;
-  const state = { busca:'', colFiltros:{}, sortRules:[] }; // colFiltros[key] = Set de valores a mostrar (ausente = sem filtro)
-
-  function salvarEstado(){
-    const colFiltrosSerializado = {};
-    Object.entries(state.colFiltros).forEach(([k,set])=>{ colFiltrosSerializado[k] = Array.from(set); });
-    localStorage.setItem(chaveEstado, JSON.stringify({ busca: state.busca, colFiltros: colFiltrosSerializado, sortRules: state.sortRules }));
-  }
-  function carregarEstado(){
-    try{
-      const raw = localStorage.getItem(chaveEstado);
-      if (!raw) return;
-      const obj = JSON.parse(raw);
-      state.busca = obj.busca || '';
-      state.sortRules = obj.sortRules || [];
-      state.colFiltros = {};
-      Object.entries(obj.colFiltros || {}).forEach(([k,arr])=>{ state.colFiltros[k] = new Set(arr); });
-    }catch(e){ /* estado salvo inválido — ignora e começa limpo */ }
-  }
-  carregarEstado();
 
   function valorExibivel(r, f){
     if (f.edit==='multiselect') return (profilesCache.filter(p=>(r.__resp_ids||[]).includes(p.id)).map(p=>p.nome).join(', '));
@@ -2145,6 +2157,9 @@ async function viewTabela(tableName){
 
   function aplicarFiltrosOrdenacao(){
     let rows = data.slice();
+    if (state.somenteNaoVistos){
+      rows = rows.filter(temNaoVisto);
+    }
     if (state.busca){
       rows = rows.filter(r => JSON.stringify(r).toLowerCase().includes(state.busca));
     }
@@ -2188,8 +2203,8 @@ async function viewTabela(tableName){
         const badgeCampo = (idsCampo && idsCampo.length) ? `<div class="notif-badge-wrap" data-evento-badge-group="${idsCampo.join(',')}"><span class="notif-badge notif-badge-editado">Alterado <button type="button" class="notif-lido-btn" data-evento-ids="${idsCampo.join(',')}">lido</button></span></div>` : '';
         return `<td${cls}>${badgeCampo}${content}</td>`;
       }).join('');
-      const temNovo = reg && reg.novo.length;
       const idsLinhaInteira = reg ? [...reg.novo, ...reg.detalhes, ...Object.values(reg.campos).flat()] : [];
+      const temNovo = idsLinhaInteira.length > 0;
       const notifCell = cfg.notificacoes ? `<td class="notif-cell">${temNovo ? `<span class="notif-badge notif-badge-novo" data-evento-badge-group="${idsLinhaInteira.join(',')}">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${idsLinhaInteira.join(',')}" title="Marca a linha inteira como lida, inclusive o Detalhes">lido</button></span>` : ''}</td>` : '';
       const temDetalhesNovo = reg && reg.detalhes.length;
       const detalhesCell = cfg.detalhavel ? `<td class="row-actions"><button class="icon-btn" onclick="abrirDetalhes('${tableName}','${r.id}')" title="${temDetalhesNovo?'Tem alteração não lida no Detalhes':''}">detalhes${temDetalhesNovo?'<span class="nav-dot" style="margin-left:6px;"></span>':''}</button></td>` : '';
@@ -2238,9 +2253,18 @@ async function viewTabela(tableName){
     aplicarFiltrosOrdenacao();
   });
 
+  if (cfg.notificacoes){
+    document.getElementById('chk-nao-vistos').addEventListener('change', (e)=>{
+      state.somenteNaoVistos = e.target.checked;
+      salvarEstado();
+      aplicarFiltrosOrdenacao();
+    });
+  }
+
   document.getElementById('btn-limpar-filtros').addEventListener('click', ()=>{
-    state.busca = ''; state.colFiltros = {}; state.sortRules = [];
+    state.busca = ''; state.colFiltros = {}; state.sortRules = []; state.somenteNaoVistos = false;
     filterTextEl.value = '';
+    if (cfg.notificacoes) document.getElementById('chk-nao-vistos').checked = false;
     localStorage.removeItem(chaveEstado);
     atualizarIndicadoresOrdenacao();
     atualizarIndicadoresFiltro();
@@ -2875,11 +2899,11 @@ async function viewMinhasTarefas(){
   }
 
   const chaveEstado = `tabela_estado_minhas-tarefas_${currentUser.id}`;
-  const state = { busca:'', colFiltros:{}, sortRules:[] };
+  const state = { busca:'', colFiltros:{}, sortRules:[], somenteNaoVistos:false };
   function salvarEstado(){
     const colFiltrosSerializado = {};
     Object.entries(state.colFiltros).forEach(([k,set])=>{ colFiltrosSerializado[k] = Array.from(set); });
-    localStorage.setItem(chaveEstado, JSON.stringify({ busca: state.busca, colFiltros: colFiltrosSerializado, sortRules: state.sortRules }));
+    localStorage.setItem(chaveEstado, JSON.stringify({ busca: state.busca, colFiltros: colFiltrosSerializado, sortRules: state.sortRules, somenteNaoVistos: state.somenteNaoVistos }));
   }
   function carregarEstado(){
     try{
@@ -2888,11 +2912,17 @@ async function viewMinhasTarefas(){
       const obj = JSON.parse(raw);
       state.busca = obj.busca || '';
       state.sortRules = obj.sortRules || [];
+      state.somenteNaoVistos = !!obj.somenteNaoVistos;
       state.colFiltros = {};
       Object.entries(obj.colFiltros || {}).forEach(([k,arr])=>{ state.colFiltros[k] = new Set(arr); });
     }catch(e){}
   }
   carregarEstado();
+
+  function temNaoVisto(r){
+    const reg = eventosPorProjeto[r.id];
+    return !!(reg && (reg.novo.length || reg.detalhes.length || Object.keys(reg.campos).length));
+  }
 
   let dados = [];
 
@@ -2902,7 +2932,8 @@ async function viewMinhasTarefas(){
     if (!rows.length){ tbody.innerHTML = `<tr class="empty-row"><td colspan="${CAMPOS_MINHAS_TAREFAS.length}">Nenhum projeto encontrado.</td></tr>`; return; }
     tbody.innerHTML = rows.map(r=>{
       const reg = eventosPorProjeto[r.id];
-      const badgeNovo = (reg && reg.novo.length) ? (()=>{ const ids = [...reg.novo, ...reg.detalhes, ...Object.values(reg.campos).flat()]; return `<div class="notif-badge-wrap" data-evento-badge-group="${ids.join(',')}"><span class="notif-badge notif-badge-novo">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${ids.join(',')}" title="Marca a linha inteira como lida, inclusive o Detalhes">lido</button></span></div>`; })() : '';
+      const idsRegistro = reg ? [...reg.novo, ...reg.detalhes, ...Object.values(reg.campos).flat()] : [];
+      const badgeNovo = idsRegistro.length ? `<div class="notif-badge-wrap" data-evento-badge-group="${idsRegistro.join(',')}"><span class="notif-badge notif-badge-novo">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${idsRegistro.join(',')}" title="Marca a linha inteira como lida, inclusive o Detalhes">lido</button></span></div>` : '';
       const temDetalhes = reg && reg.detalhes.length;
       return `<tr data-id="${r.id}">
         <td>${badgeNovo}<button type="button" class="link-btn" style="font-size:13px;text-align:left;" onclick="abrirDetalhes('projetos','${r.id}')" title="${temDetalhes?'Tem alteração não lida no Detalhes':''}">${escapeHtml(r.projeto||'')}${temDetalhes?'<span class="nav-dot" style="margin-left:6px;"></span>':''}</button></td>
@@ -2981,6 +3012,9 @@ async function viewMinhasTarefas(){
 
   function aplicarFiltrosOrdenacao(){
     let rows = dados.slice();
+    if (state.somenteNaoVistos){
+      rows = rows.filter(temNaoVisto);
+    }
     if (state.busca){
       rows = rows.filter(r => JSON.stringify(r).toLowerCase().includes(state.busca));
     }
@@ -3091,6 +3125,7 @@ async function viewMinhasTarefas(){
       <input type="text" id="filter-text" placeholder="Buscar em tudo..." style="min-width:220px" />
       <button class="btn" id="btn-limpar-filtros" type="button">Limpar filtros e ordenação</button>
       <div class="spacer"></div>
+      <label class="filtro-nao-vistos"><input type="checkbox" id="chk-nao-vistos" ${state.somenteNaoVistos?'checked':''} /> Mostrar apenas não vistos</label>
       <button class="btn" id="btn-marcar-tudo-lido-mt" style="width:auto;display:${todosOsEventosMinhasTarefas().length?'':'none'}">✓ Marcar tudo como lido (${todosOsEventosMinhasTarefas().length})</button>
     </div>
     <div class="section-note" style="margin-bottom:10px;">Clique no nome de uma coluna pra ordenar. Segure <b>Shift</b> pra ordenar por várias colunas ao mesmo tempo. Clique no ▾ pra filtrar valores específicos daquela coluna — suas escolhas ficam salvas até você limpar.</div>
@@ -3125,9 +3160,15 @@ async function viewMinhasTarefas(){
     salvarEstado();
     aplicarFiltrosOrdenacao();
   });
+  document.getElementById('chk-nao-vistos').addEventListener('change', (e)=>{
+    state.somenteNaoVistos = e.target.checked;
+    salvarEstado();
+    aplicarFiltrosOrdenacao();
+  });
   document.getElementById('btn-limpar-filtros').addEventListener('click', ()=>{
-    state.busca = ''; state.colFiltros = {}; state.sortRules = [];
+    state.busca = ''; state.colFiltros = {}; state.sortRules = []; state.somenteNaoVistos = false;
     filterTextEl.value = '';
+    document.getElementById('chk-nao-vistos').checked = false;
     localStorage.removeItem(chaveEstado);
     atualizarIndicadoresOrdenacao();
     atualizarIndicadoresFiltro();
