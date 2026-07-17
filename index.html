@@ -990,6 +990,7 @@ const ABAS_DISPONIVEIS = [
   ['programacao-carregamento','Programação Carregamento'],
   ['opcoes-menu','Opções dos Menus'],
   ['usuarios','Usuários'],
+  ['pendencias-leitura','Pendências de Leitura'],
   ['auditoria','Log de Auditoria'],
 ];
 
@@ -1000,7 +1001,7 @@ const NAV_GRUPOS = [
   ['dashboard'],
   ['minhas-tarefas','projetos','chamados','sac-industria'],
   ['vendas','programacao-carregamento'],
-  ['opcoes-menu','usuarios','auditoria'],
+  ['opcoes-menu','usuarios','pendencias-leitura','auditoria'],
 ];
 
 // Cargos do sistema. "engenharia" cobre o time de Engenharia (e SAC, no caso
@@ -1015,7 +1016,7 @@ const ROTULO_PAPEL = {
   usuario_industria: 'Usuário Indústria',
 };
 const NAV_ITEMS_PADRAO = {
-  admin:                  ['dashboard','minhas-tarefas','chamados','projetos','vendas','programacao-carregamento','sac-industria','opcoes-menu','usuarios','auditoria'],
+  admin:                  ['dashboard','minhas-tarefas','chamados','projetos','vendas','programacao-carregamento','sac-industria','opcoes-menu','usuarios','pendencias-leitura','auditoria'],
   gestor_engenharia:      ['dashboard','minhas-tarefas','chamados','projetos','vendas','sac-industria','auditoria'],
   usuario_engenharia_sac: ['minhas-tarefas','chamados','sac-industria'],
   gestor_industria:       ['dashboard','minhas-tarefas','programacao-carregamento','sac-industria','auditoria'],
@@ -1036,6 +1037,7 @@ const SUBPERMISSOES_ABA = {
   ],
   'minhas-tarefas': [],
   'opcoes-menu':  [],
+  'pendencias-leitura': [],
   auditoria:      [],
   chamados: [
     {key:'ver_proprio', label:'Visualizar chamados designados ao próprio usuário'},
@@ -1218,6 +1220,7 @@ async function navigateTo(key, opts){
     else if (key==='sac-industria') await viewTabela('reclamacoes_industria');
     else if (key==='opcoes-menu') await viewOpcoesMenu();
     else if (key==='usuarios') await viewUsuarios();
+    else if (key==='pendencias-leitura') await viewPendenciasLeitura();
     else if (key==='auditoria') await viewAuditoria();
   }catch(err){
     console.error(err);
@@ -2186,7 +2189,8 @@ async function viewTabela(tableName){
         return `<td${cls}>${badgeCampo}${content}</td>`;
       }).join('');
       const temNovo = reg && reg.novo.length;
-      const notifCell = cfg.notificacoes ? `<td class="notif-cell">${temNovo ? `<span class="notif-badge notif-badge-novo" data-evento-badge-group="${reg.novo.join(',')}">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${reg.novo.join(',')}">lido</button></span>` : ''}</td>` : '';
+      const idsLinhaInteira = reg ? [...reg.novo, ...reg.detalhes, ...Object.values(reg.campos).flat()] : [];
+      const notifCell = cfg.notificacoes ? `<td class="notif-cell">${temNovo ? `<span class="notif-badge notif-badge-novo" data-evento-badge-group="${idsLinhaInteira.join(',')}">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${idsLinhaInteira.join(',')}" title="Marca a linha inteira como lida, inclusive o Detalhes">lido</button></span>` : ''}</td>` : '';
       const temDetalhesNovo = reg && reg.detalhes.length;
       const detalhesCell = cfg.detalhavel ? `<td class="row-actions"><button class="icon-btn" onclick="abrirDetalhes('${tableName}','${r.id}')" title="${temDetalhesNovo?'Tem alteração não lida no Detalhes':''}">detalhes${temDetalhesNovo?'<span class="nav-dot" style="margin-left:6px;"></span>':''}</button></td>` : '';
       const podeExcluirRow = podeExcluirAlgo && registroVisivel(perm, r);
@@ -2200,8 +2204,7 @@ async function viewTabela(tableName){
           e.stopPropagation();
           btn.disabled = true;
           const eventoIds = (btn.dataset.eventoIds||'').split(',').filter(Boolean);
-          const badges = Array.from(document.querySelectorAll(`[data-evento-badge-group="${btn.dataset.eventoIds}"]`));
-          const ok = await marcarNotifLida(cfg.notifLidosTable, eventoIds, badges);
+          const ok = await marcarNotifLida(cfg.notifLidosTable, eventoIds, []);
           if (!ok){ btn.disabled = false; return; }
           // Some do estado em memória também, sem precisar recarregar a tabela inteira.
           Object.values(eventosPorRegistro).forEach(reg=>{
@@ -2213,6 +2216,10 @@ async function viewTabela(tableName){
             });
           });
           atualizarBotaoMarcarTudoTabela();
+          // Reconstrói as linhas: garante que o pontinho do "detalhes" também
+          // suma (ele não anima junto, já que não é um selo comum) e que a
+          // linha se ajuste certinho de tamanho.
+          aplicarFiltrosOrdenacao();
         });
       });
     }
@@ -2895,7 +2902,7 @@ async function viewMinhasTarefas(){
     if (!rows.length){ tbody.innerHTML = `<tr class="empty-row"><td colspan="${CAMPOS_MINHAS_TAREFAS.length}">Nenhum projeto encontrado.</td></tr>`; return; }
     tbody.innerHTML = rows.map(r=>{
       const reg = eventosPorProjeto[r.id];
-      const badgeNovo = (reg && reg.novo.length) ? `<div class="notif-badge-wrap" data-evento-badge-group="${reg.novo.join(',')}"><span class="notif-badge notif-badge-novo">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${reg.novo.join(',')}">lido</button></span></div>` : '';
+      const badgeNovo = (reg && reg.novo.length) ? (()=>{ const ids = [...reg.novo, ...reg.detalhes, ...Object.values(reg.campos).flat()]; return `<div class="notif-badge-wrap" data-evento-badge-group="${ids.join(',')}"><span class="notif-badge notif-badge-novo">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${ids.join(',')}" title="Marca a linha inteira como lida, inclusive o Detalhes">lido</button></span></div>`; })() : '';
       const temDetalhes = reg && reg.detalhes.length;
       return `<tr data-id="${r.id}">
         <td>${badgeNovo}<button type="button" class="link-btn" style="font-size:13px;text-align:left;" onclick="abrirDetalhes('projetos','${r.id}')" title="${temDetalhes?'Tem alteração não lida no Detalhes':''}">${escapeHtml(r.projeto||'')}${temDetalhes?'<span class="nav-dot" style="margin-left:6px;"></span>':''}</button></td>
@@ -2943,7 +2950,7 @@ async function viewMinhasTarefas(){
         e.stopPropagation();
         btn.disabled = true;
         const eventoIds = (btn.dataset.eventoIds||'').split(',').filter(Boolean);
-        const ok = await marcarNotifLida(cfgProjetos.notifLidosTable, eventoIds, Array.from(document.querySelectorAll(`[data-evento-badge-group="${btn.dataset.eventoIds}"]`)));
+        const ok = await marcarNotifLida(cfgProjetos.notifLidosTable, eventoIds, []);
         if (!ok){ btn.disabled = false; return; }
         Object.values(eventosPorProjeto).forEach(reg=>{
           reg.novo = reg.novo.filter(id=>!eventoIds.includes(id));
@@ -2954,6 +2961,7 @@ async function viewMinhasTarefas(){
           });
         });
         atualizarBotaoMarcarTudoMT();
+        aplicarFiltrosOrdenacao();
       });
     });
   }
@@ -3670,6 +3678,79 @@ const CAMPOS_AUDITORIA = [
   {key:'tabela', label:'Tabela'},
   {key:'acao', label:'Ação'},
 ];
+
+// Painel admin: por usuário, quantas notificações (em cada aba com esse
+// sistema) ainda estão sem "lido". Busca tudo de uma vez (por tabela, não
+// por usuário) pra não fazer uma consulta pra cada pessoa.
+async function viewPendenciasLeitura(){
+  document.getElementById('page-title').textContent = 'Pendências de Leitura';
+  document.getElementById('page-sub').textContent = 'O que cada usuário ainda não marcou como "lido", por aba.';
+
+  const tabelasNotif = Object.keys(TABLE_CONFIG).filter(t=>TABLE_CONFIG[t].notificacoes);
+  const [{ data: usuarios, error: errUsuarios }, ...resultados] = await Promise.all([
+    sb.rpc('listar_usuarios'),
+    ...tabelasNotif.map(t=>{
+      const cfg = TABLE_CONFIG[t];
+      return Promise.all([
+        sb.from(cfg.notifEventosTable).select('id, criado_por'),
+        sb.from(cfg.notifLidosTable).select('evento_id, usuario_id'),
+      ]);
+    }),
+  ]);
+  if (errUsuarios) throw errUsuarios;
+
+  const porTabela = {};
+  tabelasNotif.forEach((t, i)=>{
+    const [{ data: eventos }, { data: lidos }] = resultados[i];
+    const lidosPorEvento = new Map();
+    (lidos||[]).forEach(l=>{
+      if (!lidosPorEvento.has(l.evento_id)) lidosPorEvento.set(l.evento_id, new Set());
+      lidosPorEvento.get(l.evento_id).add(l.usuario_id);
+    });
+    porTabela[t] = { eventos: eventos||[], lidosPorEvento };
+  });
+
+  function podeVerAba(role, aba){
+    const perm = permissoesPara(aba, role);
+    return !!(perm.acesso && (perm.ver_proprio || perm.ver_outros));
+  }
+
+  // null = a pessoa não tem acesso a essa aba de jeito nenhum (não conta
+  // como pendência — ela nunca vai ser cobrada de ler algo que não pode
+  // nem ver). Só conta de verdade quando o papel tem "ver_proprio" ou
+  // "ver_outros" naquela aba.
+  function pendentesPara(usuario, tabela){
+    const cfg = TABLE_CONFIG[tabela];
+    if (!podeVerAba(usuario.role, cfg.aba)) return null;
+    const { eventos, lidosPorEvento } = porTabela[tabela];
+    return eventos.filter(ev=>{
+      if (ev.criado_por === usuario.id) return false; // ninguém "deve" ler a própria mudança
+      const lidoPor = lidosPorEvento.get(ev.id);
+      return !lidoPor || !lidoPor.has(usuario.id);
+    }).length;
+  }
+
+  const root = document.getElementById('view-root');
+  root.innerHTML = `
+    <div class="section-note">Conta registros novos, campos alterados, checklists e imagens que cada pessoa ainda não marcou como lido — em cada aba que tem esse sistema de notificação. Papéis sem acesso a uma aba nem entram na conta dela (célula em branco).</div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Usuário</th>${tabelasNotif.map(t=>`<th style="text-align:center">${escapeHtml(TABLE_CONFIG[t].title)}</th>`).join('')}<th style="text-align:center">Total</th></tr></thead>
+      <tbody>
+        ${(usuarios||[]).map(u=>{
+          const porT = tabelasNotif.map(t=>pendentesPara(u, t));
+          const total = porT.reduce((a,b)=>a+(b||0), 0);
+          return `<tr>
+            <td>${escapeHtml(u.nome)} <span class="role-stamp role-${u.role}" style="margin-left:6px;">${escapeHtml(ROTULO_PAPEL[u.role]||u.role)}</span></td>
+            ${porT.map(n=>n===null ? `<td style="text-align:center;color:var(--text-faint);" title="Papel sem acesso a esta aba">·</td>` : `<td style="text-align:center;${n?'font-weight:800;color:var(--c-orange);':'color:var(--text-faint);'}">${n||'—'}</td>`).join('')}
+            <td style="text-align:center;font-weight:800;${total?'color:var(--c-orange);':'color:var(--text-faint);'}">${total||'—'}</td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table></div>
+  `;
+
+  currentSilentRefresh = async ()=>{ await viewPendenciasLeitura(); };
+}
 
 async function viewAuditoria(){
   document.getElementById('page-title').textContent = 'Log de Auditoria';
