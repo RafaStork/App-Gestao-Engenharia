@@ -1147,12 +1147,14 @@ function abaTemAlgumAcesso(perm){ return !!(perm && perm.acesso); }
 
 function abasPermitidasPara(role){
   let abas = ABAS_DISPONIVEIS.filter(([key])=> abaTemAlgumAcesso(permissoesPara(key, role)));
-  // Redes de segurança: 1) todo mundo sempre enxerga "Minhas Tarefas", pra
-  // ninguém ficar sem conseguir abrir NENHUMA aba por causa de uma
-  // configuração de permissão incompleta/zerada; 2) admin sempre mantém
-  // acesso a "Usuários", senão ninguém mais mexe nas permissões.
-  if (!abas.some(([key])=>key==='minhas-tarefas')){
-    abas = [ABAS_DISPONIVEIS.find(([key])=>key==='minhas-tarefas'), ...abas];
+  // Redes de segurança: 1) se a pessoa ficaria sem ENXERGAR NENHUMA aba
+  // (nem uma só), libera "Minhas Tarefas" como último recurso pra ela não
+  // ficar trancada fora do sistema inteiro — mas se o admin deixou outras
+  // abas visíveis e só tirou o acesso a "Minhas Tarefas" de propósito, isso
+  // é respeitado normalmente (a aba fica escondida mesmo). 2) admin sempre
+  // mantém acesso a "Usuários", senão ninguém mais mexe nas permissões.
+  if (!abas.length){
+    abas = [ABAS_DISPONIVEIS.find(([key])=>key==='minhas-tarefas')];
   }
   if (role === 'admin' && !abas.some(([key])=>key==='usuarios')){
     abas.push(ABAS_DISPONIVEIS.find(([key])=>key==='usuarios'));
@@ -1241,6 +1243,7 @@ const TABLE_CONFIG = {
     title: 'Chamados SAC', sub: 'Registro e acompanhamento dos chamados de atendimento.',
     aba: 'chamados',
     respTable: 'chamados_sac_responsaveis', respFk: 'chamado_id', detalhavel: true,
+    notificacoes: true, notifEventosTable:'chamados_sac_eventos', notifLidosTable:'chamados_sac_eventos_lidos', notifFk:'chamado_id',
     fields: [
       {key:'numero_chamado', label:'Nº', edit:'text', w:70, readonly:true},
       {key:'motivo', label:'Motivo', edit:'select', group:'chamados_motivo'},
@@ -1258,6 +1261,7 @@ const TABLE_CONFIG = {
     title: 'Projetos', sub: 'Projetos de engenharia em andamento e planejados.',
     aba: 'projetos',
     respTable: 'projetos_responsaveis', respFk: 'projeto_id', detalhavel: true,
+    notificacoes: true, notifEventosTable:'projetos_eventos', notifLidosTable:'projetos_eventos_lidos', notifFk:'projeto_id',
     fields: [
       {key:'projeto', label:'Projeto', edit:'text', w:220},
       {key:'status', label:'Status', edit:'select', group:'projetos_status'},
@@ -1357,23 +1361,41 @@ async function marcarNotifLida(tabelaLidos, eventoIds, badgeEls){
 // lateral. Chamada depois de qualquer "lido", ao clicar em "Atualizar", ao
 // entrar no sistema, e por um intervalo leve só pra essa contagem (não
 // recarrega dado nenhum da tela, é uma consulta bem pequena).
+// Descobre se sobra alguma notificação não lida (pra ESTE usuário) dentro
+// de um conjunto de registros já filtrado por visibilidade/responsabilidade.
+async function contarNaoLidos(tableName, idsVisiveis){
+  if (!idsVisiveis.size) return false;
+  const cfg = TABLE_CONFIG[tableName];
+  const { data: eventos } = await sb.from(cfg.notifEventosTable).select(`id, criado_por, ${cfg.notifFk}`).in(cfg.notifFk, Array.from(idsVisiveis));
+  const relevantes = (eventos||[]).filter(e=>e.criado_por !== currentUser.id);
+  if (!relevantes.length) return false;
+  const { data: lidos } = await sb.from(cfg.notifLidosTable).select('evento_id').eq('usuario_id', currentUser.id);
+  const lidosSet = new Set((lidos||[]).map(l=>l.evento_id));
+  return relevantes.some(e=>!lidosSet.has(e.id));
+}
+
 async function atualizarBolinhaNotificacoes(){
-  const dot = document.querySelector('.nav-dot[data-nav-dot="sac-industria"]');
-  if (!dot) return;
   try{
-    const cfg = TABLE_CONFIG['reclamacoes_industria'];
-    const perm = permissoesTabela('reclamacoes_industria');
-    if (!perm.ver_proprio && !perm.ver_outros){ dot.style.display = 'none'; return; }
-    const { data: registros } = await sb.from('reclamacoes_industria').select('id, criado_por');
-    const visiveis = new Set((registros||[]).filter(r=>registroVisivel(perm, r)).map(r=>r.id));
-    if (!visiveis.size){ dot.style.display = 'none'; return; }
-    const { data: eventos } = await sb.from(cfg.notifEventosTable).select('id, criado_por, reclamacao_id').in('reclamacao_id', Array.from(visiveis));
-    const relevantes = (eventos||[]).filter(e=>e.criado_por !== currentUser.id);
-    if (!relevantes.length){ dot.style.display = 'none'; return; }
-    const { data: lidos } = await sb.from(cfg.notifLidosTable).select('evento_id').eq('usuario_id', currentUser.id);
-    const lidosSet = new Set((lidos||[]).map(l=>l.evento_id));
-    const naoLidos = relevantes.some(e=>!lidosSet.has(e.id));
-    dot.style.display = naoLidos ? '' : 'none';
+    for (const tableName of Object.keys(TABLE_CONFIG)){
+      const cfg = TABLE_CONFIG[tableName];
+      if (!cfg.notificacoes) continue;
+      const dot = document.querySelector(`.nav-dot[data-nav-dot="${cfg.aba}"]`);
+      if (!dot) continue;
+      const perm = permissoesTabela(tableName);
+      if (!perm.ver_proprio && !perm.ver_outros){ dot.style.display = 'none'; continue; }
+      const { data: registros } = await sb.from(tableName).select('*');
+      const idsVisiveis = new Set((registros||[]).filter(r=>registroVisivel(perm, r)).map(r=>r.id));
+      dot.style.display = (await contarNaoLidos(tableName, idsVisiveis)) ? '' : 'none';
+    }
+    // "Minhas Tarefas" é um recorte de "Projetos" (só o que é
+    // responsabilidade da própria pessoa) — usa os mesmos eventos de
+    // projetos, mas com uma bolinha própria, calculada à parte.
+    const dotMinhas = document.querySelector('.nav-dot[data-nav-dot="minhas-tarefas"]');
+    if (dotMinhas){
+      const { data: meusProjetos } = await sb.from('projetos').select('id, projetos_responsaveis!inner(profile_id)').eq('projetos_responsaveis.profile_id', currentUser.id);
+      const idsMeus = new Set((meusProjetos||[]).map(r=>r.id));
+      dotMinhas.style.display = (await contarNaoLidos('projetos', idsMeus)) ? '' : 'none';
+    }
   }catch(e){ /* a bolinha nunca deve travar o resto do app */ }
 }
 
@@ -2037,6 +2059,25 @@ async function viewTabela(tableName){
     return mapa;
   }
   if (cfg.notificacoes) eventosPorRegistro = await carregarNotificacoes();
+  // Todos os ids de evento não lidos da tabela inteira (linha "Novo", campos
+  // editados e o que tiver pendente no Detalhes) — usado pelo botão
+  // "Marcar tudo como lido" da barra de ferramentas.
+  function todosOsEventosDaTabela(){
+    const ids = [];
+    Object.values(eventosPorRegistro).forEach(reg=>{
+      ids.push(...reg.novo, ...reg.detalhes);
+      Object.values(reg.campos).forEach(arr=>ids.push(...arr));
+    });
+    return ids;
+  }
+  function atualizarBotaoMarcarTudoTabela(){
+    const btnTudo = document.getElementById('btn-marcar-tudo-lido-tabela');
+    if (!btnTudo) return;
+    const total = todosOsEventosDaTabela().length;
+    if (!total){ btnTudo.style.display = 'none'; return; }
+    btnTudo.style.display = '';
+    btnTudo.textContent = `✓ Marcar tudo como lido (${total})`;
+  }
 
   const root = document.getElementById('view-root');
   root.innerHTML = `
@@ -2044,6 +2085,7 @@ async function viewTabela(tableName){
       <input type="text" id="filter-text" placeholder="Buscar em tudo..." style="min-width:220px" />
       <button class="btn" id="btn-limpar-filtros" type="button">Limpar filtros e ordenação</button>
       <div class="spacer"></div>
+      ${cfg.notificacoes ? `<button class="btn" id="btn-marcar-tudo-lido-tabela" style="width:auto;display:${todosOsEventosDaTabela().length?'':'none'}">✓ Marcar tudo como lido (${todosOsEventosDaTabela().length})</button>` : ''}
       ${podeCriar ? `<button class="btn btn-primary" id="btn-new" style="width:auto">+ Novo</button>` : ''}
     </div>
     <div class="section-note" style="margin-bottom:10px;">Clique no nome de uma coluna pra ordenar. Segure <b>Shift</b> pra ordenar por várias colunas ao mesmo tempo (a ordem do clique define a prioridade). Clique no ▾ pra filtrar valores específicos daquela coluna. Suas escolhas ficam salvas até você mesmo limpar.</div>
@@ -2170,6 +2212,7 @@ async function viewTabela(tableName){
               if (!reg.campos[k].length) delete reg.campos[k];
             });
           });
+          atualizarBotaoMarcarTudoTabela();
         });
       });
     }
@@ -2197,6 +2240,26 @@ async function viewTabela(tableName){
     aplicarFiltrosOrdenacao();
     toast('Filtros e ordenação removidos.');
   });
+
+  if (cfg.notificacoes){
+    const btnTudoTabela = document.getElementById('btn-marcar-tudo-lido-tabela');
+    if (btnTudoTabela){
+      btnTudoTabela.addEventListener('click', async ()=>{
+        btnTudoTabela.disabled = true;
+        const eventoIds = todosOsEventosDaTabela();
+        const ok = await marcarNotifLida(cfg.notifLidosTable, eventoIds, []);
+        if (!ok){ btnTudoTabela.disabled = false; return; }
+        Object.values(eventosPorRegistro).forEach(reg=>{ reg.novo = []; reg.detalhes = []; reg.campos = {}; });
+        btnTudoTabela.style.display = 'none';
+        btnTudoTabela.disabled = false;
+        // Re-renderiza a tabela inteira: o pontinho do botão "detalhes" não
+        // tem uma classe própria pra animar/remover (só os selos de "Novo"/
+        // "Alterado" têm), então só some de verdade recriando as linhas.
+        aplicarFiltrosOrdenacao();
+        toast('Tudo marcado como lido.');
+      });
+    }
+  }
 
   document.querySelectorAll('.th-sort').forEach(btn=>{
     btn.addEventListener('click', (e)=>{
@@ -2336,6 +2399,7 @@ async function viewTabela(tableName){
     if (cfg.notificacoes) eventosPorRegistro = await carregarNotificacoes();
     await loadProfilesCache();
     aplicarFiltrosOrdenacao();
+    if (cfg.notificacoes) atualizarBotaoMarcarTudoTabela();
   };
 }
 
@@ -2751,6 +2815,53 @@ async function viewMinhasTarefas(){
     return data || [];
   }
 
+  // Notificações — "Minhas Tarefas" é um recorte de Projetos, então usa
+  // exatamente os mesmos eventos (nada de tabela própria).
+  const cfgProjetos = TABLE_CONFIG['projetos'];
+  let eventosPorProjeto = {};
+  async function carregarNotificacoesMinhasTarefas(){
+    const mapa = {};
+    if (!dados.length) return mapa;
+    const ids = dados.map(r=>r.id);
+    const [{ data: eventos }, { data: lidos }] = await Promise.all([
+      sb.from(cfgProjetos.notifEventosTable).select('*').in(cfgProjetos.notifFk, ids),
+      sb.from(cfgProjetos.notifLidosTable).select('evento_id').eq('usuario_id', currentUser.id),
+    ]);
+    const lidosSet = new Set((lidos||[]).map(l=>l.evento_id));
+    (eventos||[]).forEach(ev=>{
+      if (ev.criado_por === currentUser.id) return;
+      if (lidosSet.has(ev.id)) return;
+      const chave = ev[cfgProjetos.notifFk];
+      const reg = mapa[chave] || (mapa[chave] = { novo:[], campos:{}, detalhes:[] });
+      if (ev.tipo === 'novo') reg.novo.push(ev.id);
+      else if (ev.item_id) reg.detalhes.push(ev.id);
+      else if (ev.campo) (reg.campos[ev.campo] = reg.campos[ev.campo] || []).push(ev.id);
+    });
+    return mapa;
+  }
+  function badgeCampoMT(registroId, campoKey){
+    const reg = eventosPorProjeto[registroId];
+    const ids = reg && reg.campos[campoKey];
+    if (!ids || !ids.length) return '';
+    return `<div class="notif-badge-wrap" data-evento-badge-group="${ids.join(',')}"><span class="notif-badge notif-badge-editado">Alterado <button type="button" class="notif-lido-btn" data-evento-ids="${ids.join(',')}">lido</button></span></div>`;
+  }
+  function todosOsEventosMinhasTarefas(){
+    const ids = [];
+    Object.values(eventosPorProjeto).forEach(reg=>{
+      ids.push(...reg.novo, ...reg.detalhes);
+      Object.values(reg.campos).forEach(arr=>ids.push(...arr));
+    });
+    return ids;
+  }
+  function atualizarBotaoMarcarTudoMT(){
+    const btn = document.getElementById('btn-marcar-tudo-lido-mt');
+    if (!btn) return;
+    const total = todosOsEventosMinhasTarefas().length;
+    if (!total){ btn.style.display = 'none'; return; }
+    btn.style.display = '';
+    btn.textContent = `✓ Marcar tudo como lido (${total})`;
+  }
+
   function valorExibivel(r, campo){
     if (campo.tipo==='percent') return Math.round((r[campo.key]||0)*100);
     return r[campo.key] ?? '';
@@ -2782,19 +2893,24 @@ async function viewMinhasTarefas(){
     const tbody = document.getElementById('tbody');
     if (!tbody) return;
     if (!rows.length){ tbody.innerHTML = `<tr class="empty-row"><td colspan="${CAMPOS_MINHAS_TAREFAS.length}">Nenhum projeto encontrado.</td></tr>`; return; }
-    tbody.innerHTML = rows.map(r=>`<tr data-id="${r.id}">
-        <td><button type="button" class="link-btn" style="font-size:13px;text-align:left;" onclick="abrirDetalhes('projetos','${r.id}')">${escapeHtml(r.projeto||'')}</button></td>
+    tbody.innerHTML = rows.map(r=>{
+      const reg = eventosPorProjeto[r.id];
+      const badgeNovo = (reg && reg.novo.length) ? `<div class="notif-badge-wrap" data-evento-badge-group="${reg.novo.join(',')}"><span class="notif-badge notif-badge-novo">🆕 Novo <button type="button" class="notif-lido-btn" data-evento-ids="${reg.novo.join(',')}">lido</button></span></div>` : '';
+      const temDetalhes = reg && reg.detalhes.length;
+      return `<tr data-id="${r.id}">
+        <td>${badgeNovo}<button type="button" class="link-btn" style="font-size:13px;text-align:left;" onclick="abrirDetalhes('projetos','${r.id}')" title="${temDetalhes?'Tem alteração não lida no Detalhes':''}">${escapeHtml(r.projeto||'')}${temDetalhes?'<span class="nav-dot" style="margin-left:6px;"></span>':''}</button></td>
         <td class="cell-colored" data-cell="status"></td>
         <td class="cell-colored" data-cell="prioridade"></td>
         <td data-cell="pct"></td>
         <td data-cell="inicio"></td>
-        <td>${fmtDate(r.previsao_conclusao)}</td>
-      </tr>`).join('');
+        <td>${badgeCampoMT(r.id,'previsao_conclusao')}${fmtDate(r.previsao_conclusao)}</td>
+      </tr>`;
+    }).join('');
 
     rows.forEach(r=>{
       const tr = document.querySelector(`tr[data-id="${r.id}"]`);
       if (!tr) return;
-      tr.querySelector('[data-cell="status"]').innerHTML = buildSelDropdown({
+      tr.querySelector('[data-cell="status"]').innerHTML = badgeCampoMT(r.id,'status') + buildSelDropdown({
         grupo: 'projetos_status', valorAtual: r.status, permitirVazio: true,
         validar: validarStatusConclusao('projetos', r.id),
         onSelect: async (v, btn)=>{
@@ -2802,21 +2918,42 @@ async function viewMinhasTarefas(){
           if (ok){ r.status = v; flashSavedCor(btn); toast('Status atualizado.'); aplicarFiltrosOrdenacao(); }
         },
       });
-      tr.querySelector('[data-cell="prioridade"]').innerHTML = r.prioridade
+      tr.querySelector('[data-cell="prioridade"]').innerHTML = badgeCampoMT(r.id,'prioridade') + (r.prioridade
         ? celulaColorida(corDaOpcao('projetos_prioridade', r.prioridade), escapeHtml(r.prioridade))
-        : celulaColorida('var(--text-faint)', 'Sem definir');
+        : celulaColorida('var(--text-faint)', 'Sem definir'));
       const pctCell = tr.querySelector('[data-cell="pct"]');
       const pctId = 'my_pct_'+r.id;
-      pctCell.innerHTML = `<input type="number" class="cell-number" id="${pctId}" value="${Math.round((r.percentual_conclusao||0)*100)}" min="0" max="100" step="5" style="width:64px" />%`;
+      pctCell.innerHTML = badgeCampoMT(r.id,'percentual_conclusao') + `<input type="number" class="cell-number" id="${pctId}" value="${Math.round((r.percentual_conclusao||0)*100)}" min="0" max="100" step="5" style="width:64px" />%`;
       pctCell.querySelector('input').addEventListener('change', async (e)=>{
         const novoValor = parseFloat(e.target.value)/100;
         const ok = await saveField('projetos', r.id, 'percentual_conclusao', novoValor);
         if (ok){ r.percentual_conclusao = novoValor; flashSaved(e.target); toast('% de conclusão atualizado.'); aplicarFiltrosOrdenacao(); }
       });
-      tr.querySelector('[data-cell="inicio"]').innerHTML = buildCalendarField(r.data_inicio, async (novoValor)=>{
+      const inicioCell = tr.querySelector('[data-cell="inicio"]');
+      inicioCell.innerHTML = badgeCampoMT(r.id,'data_inicio');
+      inicioCell.insertAdjacentHTML('beforeend', buildCalendarField(r.data_inicio, async (novoValor)=>{
         const ok = await saveField('projetos', r.id, 'data_inicio', novoValor);
         if (ok){ r.data_inicio = novoValor; aplicarFiltrosOrdenacao(); }
         return ok;
+      }));
+    });
+
+    tbody.querySelectorAll('.notif-lido-btn').forEach(btn=>{
+      btn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        btn.disabled = true;
+        const eventoIds = (btn.dataset.eventoIds||'').split(',').filter(Boolean);
+        const ok = await marcarNotifLida(cfgProjetos.notifLidosTable, eventoIds, Array.from(document.querySelectorAll(`[data-evento-badge-group="${btn.dataset.eventoIds}"]`)));
+        if (!ok){ btn.disabled = false; return; }
+        Object.values(eventosPorProjeto).forEach(reg=>{
+          reg.novo = reg.novo.filter(id=>!eventoIds.includes(id));
+          reg.detalhes = reg.detalhes.filter(id=>!eventoIds.includes(id));
+          Object.keys(reg.campos).forEach(k=>{
+            reg.campos[k] = reg.campos[k].filter(id=>!eventoIds.includes(id));
+            if (!reg.campos[k].length) delete reg.campos[k];
+          });
+        });
+        atualizarBotaoMarcarTudoMT();
       });
     });
   }
@@ -2939,11 +3076,14 @@ async function viewMinhasTarefas(){
   }
 
   dados = await carregar();
+  eventosPorProjeto = await carregarNotificacoesMinhasTarefas();
   const root = document.getElementById('view-root');
   root.innerHTML = `
     <div class="toolbar">
       <input type="text" id="filter-text" placeholder="Buscar em tudo..." style="min-width:220px" />
       <button class="btn" id="btn-limpar-filtros" type="button">Limpar filtros e ordenação</button>
+      <div class="spacer"></div>
+      <button class="btn" id="btn-marcar-tudo-lido-mt" style="width:auto;display:${todosOsEventosMinhasTarefas().length?'':'none'}">✓ Marcar tudo como lido (${todosOsEventosMinhasTarefas().length})</button>
     </div>
     <div class="section-note" style="margin-bottom:10px;">Clique no nome de uma coluna pra ordenar. Segure <b>Shift</b> pra ordenar por várias colunas ao mesmo tempo. Clique no ▾ pra filtrar valores específicos daquela coluna — suas escolhas ficam salvas até você limpar.</div>
     <div class="table-wrap tabela-principal"><table>
@@ -2956,6 +3096,19 @@ async function viewMinhasTarefas(){
   aplicarFiltrosOrdenacao();
   atualizarIndicadoresOrdenacao();
   atualizarIndicadoresFiltro();
+
+  document.getElementById('btn-marcar-tudo-lido-mt').addEventListener('click', async (e)=>{
+    const btn = e.currentTarget;
+    btn.disabled = true;
+    const eventoIds = todosOsEventosMinhasTarefas();
+    const ok = await marcarNotifLida(cfgProjetos.notifLidosTable, eventoIds, []);
+    if (!ok){ btn.disabled = false; return; }
+    Object.values(eventosPorProjeto).forEach(reg=>{ reg.novo = []; reg.detalhes = []; reg.campos = {}; });
+    btn.style.display = 'none';
+    btn.disabled = false;
+    aplicarFiltrosOrdenacao();
+    toast('Tudo marcado como lido.');
+  });
 
   const filterTextEl = document.getElementById('filter-text');
   filterTextEl.value = state.busca;
@@ -2977,6 +3130,8 @@ async function viewMinhasTarefas(){
   currentSilentRefresh = async ()=>{
     const novosDados = await carregar();
     dados.length = 0; dados.push(...novosDados);
+    eventosPorProjeto = await carregarNotificacoesMinhasTarefas();
+    atualizarBotaoMarcarTudoMT();
     aplicarFiltrosOrdenacao();
   };
 }
@@ -3759,6 +3914,7 @@ const DETALHE_CONFIG = {
     imagensTable: 'projetos_imagens', imagensFk: 'projeto_id',
     campoDescricao: 'descricao_detalhada',
     campoTipoTemplate: 'categoria', rotuloTipoTemplate: 'Categoria',
+    notificacoes: true, notifEventosTable:'projetos_eventos', notifLidosTable:'projetos_eventos_lidos', notifFk:'projeto_id',
   },
   chamados_sac: {
     campoTitulo: 'numero_chamado', tituloGenerico: 'Chamado',
@@ -3768,6 +3924,7 @@ const DETALHE_CONFIG = {
     imagensTable: 'chamados_imagens', imagensFk: 'chamado_id',
     campoDescricao: 'descricao_detalhada',
     campoTipoTemplate: 'motivo', rotuloTipoTemplate: 'Motivo',
+    notificacoes: true, notifEventosTable:'chamados_sac_eventos', notifLidosTable:'chamados_sac_eventos_lidos', notifFk:'chamado_id',
   },
   reclamacoes_industria: {
     campoTitulo: 'numero_reclamacao', tituloGenerico: 'Reclamação',
@@ -3777,7 +3934,7 @@ const DETALHE_CONFIG = {
     imagensTable: 'reclamacoes_industria_imagens', imagensFk: 'reclamacao_id',
     campoDescricao: 'descricao_detalhada',
     campoTipoTemplate: 'motivo', rotuloTipoTemplate: 'Motivo',
-    notificacoes: true, notifEventosTable:'reclamacoes_industria_eventos', notifLidosTable:'reclamacoes_industria_eventos_lidos',
+    notificacoes: true, notifEventosTable:'reclamacoes_industria_eventos', notifLidosTable:'reclamacoes_industria_eventos_lidos', notifFk:'reclamacao_id',
   },
 };
 
@@ -3802,7 +3959,7 @@ window.abrirDetalhes = async function(tabela, id){
   let eventosDescricao = []; // ids de evento da "Descrição da tarefa"
   if (cfg.notificacoes){
     const [{ data: eventosDetalhe }, { data: lidosDetalhe }] = await Promise.all([
-      sb.from(cfg.notifEventosTable).select('*').eq('reclamacao_id', id),
+      sb.from(cfg.notifEventosTable).select('*').eq(cfg.notifFk, id),
       sb.from(cfg.notifLidosTable).select('evento_id').eq('usuario_id', currentUser.id),
     ]);
     const lidosSet = new Set((lidosDetalhe||[]).map(l=>l.evento_id));
