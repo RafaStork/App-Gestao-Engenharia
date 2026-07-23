@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; connect-src 'self' http://127.0.0.1:54321 ws://127.0.0.1:54321 https://*.supabase.co wss://*.supabase.co; img-src 'self' data: https://drive.google.com https://lh3.googleusercontent.com https://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'" />
 <title>Gestão de Tarefas — Engenharia &amp; Indústria</title>
 <meta name="description" content="Sistema de gestão de tarefas de Engenharia e Indústria — SAC, Vendas, Projetos e Programação de Carregamento." />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.110.8/dist/umd/supabase.min.js" integrity="sha384-Tve8O+C6PBzsIMK/IRCwHbi8fyEzXIlIs6OfVBZHubplwYhaQF/4Mzxqgg+pp/oy" crossorigin="anonymous"></script>
 <style>
 :root{
   --font:'Montserrat', sans-serif;
@@ -641,12 +642,12 @@ svg text{ font-family:var(--font); }
       <div><div class="brand-eyebrow">Engenharia &amp; Indústria</div><div class="brand-title">Gestão de Tarefas</div></div>
     </div>
     <form id="login-form">
-      <div class="field"><label>Usuário</label><input type="text" id="login-usuario" required autocomplete="username" /></div>
-      <div class="field"><label for="login-token">Token</label><div class="password-field"><input type="password" id="login-token" required autocomplete="current-password" /><button type="button" class="btn btn-ghost password-toggle" id="login-token-toggle" aria-controls="login-token" aria-pressed="false">Mostrar</button></div></div>
+      <div class="field"><label>E-mail</label><input type="email" id="login-usuario" required autocomplete="username" /></div>
+      <div class="field"><label for="login-token">Senha</label><div class="password-field"><input type="password" id="login-token" required autocomplete="current-password" /><button type="button" class="btn btn-ghost password-toggle" id="login-token-toggle" aria-controls="login-token" aria-pressed="false">Mostrar</button></div></div>
       <button type="submit" class="btn-primary" id="login-btn">Entrar</button>
       <div class="error-msg" id="login-error"></div>
     </form>
-    <div class="hint">Contas são criadas por um administrador na tela "Usuários" do sistema.</div>
+    <div class="hint">Ambiente local de homologação — autenticação protegida pelo Supabase Auth.</div>
   </div>
 </div>
 
@@ -707,15 +708,8 @@ let currentView = null;
 let profilesCache = [];
 let menuOpcoes = {};
 
-function setAuthHeader(role, userId){
-  // O token não é mais um JWT, então não pode ir em "Authorization: Bearer".
-  // Em vez disso mandamos o papel e o id do usuário logado em cabeçalhos
-  // próprios, que as políticas de RLS no Postgres leem para decidir o que
-  // cada papel (admin/gestor/usuario) pode ver e alterar.
-  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-    global: { headers: role ? { 'x-app-role': role, 'x-app-user': userId || '' } : {} },
-  });
-}
+// O cliente envia e renova o JWT do Supabase Auth automaticamente.
+// Nenhum papel ou ID de usuário é aceito por cabeçalho customizado.
 
 function applyTheme(t){
   document.documentElement.setAttribute('data-theme', t);
@@ -808,18 +802,21 @@ function monthKey(iso){ if (!iso) return null; return iso.slice(0,7); }
 
 document.getElementById('login-form').addEventListener('submit', async (e)=>{
   e.preventDefault();
-  const usuario = document.getElementById('login-usuario').value.trim();
-  const token = document.getElementById('login-token').value;
+  const email = document.getElementById('login-usuario').value.trim();
+  const password = document.getElementById('login-token').value;
   const btn = document.getElementById('login-btn');
   const errBox = document.getElementById('login-error');
   errBox.textContent = '';
   btn.disabled = true; btn.textContent = 'Entrando...';
-  const { data, error } = await sb.rpc('fazer_login', { p_usuario: usuario, p_token: token });
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error){
+    btn.disabled = false; btn.textContent = 'Entrar';
+    errBox.textContent = 'Falha no login: e-mail ou senha inválidos.';
+    return;
+  }
+  const iniciou = await bootAfterLogin();
   btn.disabled = false; btn.textContent = 'Entrar';
-  if (error || !data || !data.length){ errBox.textContent = 'Falha no login: usuário ou token inválidos.'; return; }
-  const row = data[0];
-  salvarSessao(row);
-  await bootAfterLogin();
+  if (!iniciou) await sb.auth.signOut();
 });
 document.getElementById('login-token-toggle').addEventListener('click', ()=>{
   const input = document.getElementById('login-token');
@@ -830,8 +827,10 @@ document.getElementById('login-token-toggle').addEventListener('click', ()=>{
   button.setAttribute('aria-pressed', String(mostrar));
 });
 
-document.getElementById('logout-btn').addEventListener('click', ()=>{
-  localStorage.removeItem('sessao-tarefas-app');
+document.getElementById('logout-btn').addEventListener('click', async ()=>{
+  await sb.auth.signOut();
+  currentUser = null;
+  currentProfile = null;
   location.reload();
 });
 document.getElementById('btn-atualizar').addEventListener('click', atualizarManualmente);
@@ -854,25 +853,19 @@ document.getElementById('nav-tabs').addEventListener('click', (e)=>{
   if (e.target.closest('.tab-btn')) fecharMenuLateral();
 });
 
-function salvarSessao(row){
-  localStorage.setItem('sessao-tarefas-app', JSON.stringify({
-    token: row.access_token,
-    id: row.id, nome: row.nome, usuario: row.usuario, role: row.role,
-    expiraEm: Date.now() + 7*24*60*60*1000, // 7 dias, igual à validade do token
-  }));
-}
-
 async function bootAfterLogin(){
-  const raw = localStorage.getItem('sessao-tarefas-app');
-  if (!raw) return;
-  const sessao = JSON.parse(raw);
-  if (Date.now() > sessao.expiraEm){
-    localStorage.removeItem('sessao-tarefas-app');
-    document.getElementById('login-error').textContent = 'Sua sessão expirou. Faça login novamente.';
-    return;
+  const { data: sessionData, error: sessionError } = await sb.auth.getSession();
+  const session = sessionData && sessionData.session;
+  if (sessionError || !session) return false;
+
+  const { data, error } = await sb.rpc('meu_perfil');
+  const perfil = Array.isArray(data) ? data[0] : data;
+  if (error || !perfil || !perfil.id){
+    document.getElementById('login-error').textContent = 'Conta autenticada sem perfil ativo no aplicativo.';
+    return false;
   }
-  setAuthHeader(sessao.role, sessao.id);
-  currentUser = { id: sessao.id, nome: sessao.nome, usuario: sessao.usuario, role: sessao.role };
+
+  currentUser = { id: perfil.id, nome: perfil.nome, usuario: perfil.usuario, role: perfil.role };
   currentProfile = currentUser;
 
   document.getElementById('login-screen').style.display = 'none';
@@ -892,14 +885,11 @@ async function bootAfterLogin(){
   const preferida = currentProfile.role.startsWith('usuario') ? 'minhas-tarefas' : 'dashboard';
   const firstView = abasPermitidas.includes(preferida) ? preferida : (abasPermitidas[0] || 'minhas-tarefas');
   navigateTo(firstView);
+  return true;
 }
 
-// O login é um usuário/token guardado numa tabela (não é a Autenticação real
-// do Supabase), então o Realtime do Supabase — que depende de JWT — não
-// autentica direito aqui. Em vez de ficar recarregando sozinho (o que atrapalha
-// quem está usando o sistema), o app mostra um botão "Atualizar" no topo —
-// clicar nele busca os dados mais recentes sem sair da aba nem perder a
-// posição da rolagem.
+// Atualização manual preserva a aba e a posição de rolagem. A sessão JWT é
+// renovada automaticamente pelo cliente do Supabase Auth.
 async function atualizarManualmente(){
   const btn = document.getElementById('btn-atualizar');
   if (btn){ btn.disabled = true; btn.textContent = 'Atualizando…'; }
@@ -1267,7 +1257,8 @@ async function navigateTo(key, opts){
   }catch(err){
     console.error(err);
     if (meuToken === __viewToken){
-      root.innerHTML = `<div class="section-note" style="border-color:var(--accent);color:var(--accent)">Erro ao carregar: ${err.message}</div>`;
+      root.innerHTML = '<div class="section-note view-error" style="border-color:var(--accent);color:var(--accent)"></div>';
+      root.querySelector('.view-error').textContent = `Erro ao carregar: ${err?.message || 'erro inesperado'}`;
     }
   }
   if (meuToken !== __viewToken) return; // uma navegação mais nova já rolou nesse meio-tempo — não mexe mais na tela
@@ -2234,7 +2225,7 @@ async function viewTabela(tableName){
           : (f.edit==='select' ? statusBadgeGeneric(f.group, f.boolMap ? (r[f.key]?'Sim':'Nao') : r[f.key])
              : f.edit==='multiselect' ? (profilesCache.filter(p=>(r.__resp_ids||[]).includes(p.id)).map(p=>p.nome).join(', ') || '—')
              : f.edit==='date' ? fmtDate(r[f.key])
-             : (r[f.key] ?? '—'));
+             : escapeHtml(r[f.key] ?? '—'));
         const cls = f.edit==='select' ? ' class="cell-colored"' : '';
         const idsCampo = reg && reg.campos[f.key];
         // O selo fica dentro de um "wrap" de bloco — remover ESSE elemento
@@ -3569,93 +3560,80 @@ function abrirModelosChecklistPopup(){
 async function viewUsuarios(){
   const meuTokenDaTela = __viewToken;
   document.getElementById('page-title').textContent = 'Usuários';
-  document.getElementById('page-sub').textContent = 'Crie contas, altere papéis e defina tokens — tudo direto no seu banco, sem serviços externos.';
+  document.getElementById('page-sub').textContent = 'Contas autenticadas pelo Supabase Auth. Senhas e tokens nunca são exibidos.';
   const { data, error } = await sb.rpc('listar_usuarios');
   if (error) throw error;
-  if (meuTokenDaTela !== __viewToken) return; // uma navegação mais nova já rolou nesse meio-tempo — não sobrescreve a tela atual
+  if (meuTokenDaTela !== __viewToken) return;
 
-  // Permissões configuradas pra esta pessoa na aba "Usuários": controla se
-  // ela vê o cadastro de todo mundo, só o próprio, e se pode criar/editar/excluir.
   const perm = permissoesAtuais('usuarios');
   const podeEditar = !!perm.editar;
   const podeCriar = !!perm.criar;
   const podeExcluirUsuario = !!perm.excluir;
-  const dadosVisiveis = data.filter(p => perm.ver_outros || (perm.ver_proprio && p.id===currentUser.id));
-
+  const dadosVisiveis = (data||[]).filter(p => perm.ver_outros || (perm.ver_proprio && p.id===currentUser.id));
   const root = document.getElementById('view-root');
-  let nuRoleEscolhido = 'usuario_engenharia_sac';
+
   root.innerHTML = `
-    ${(!perm.ver_outros && perm.ver_proprio) ? `<div class="section-note">Sua permissão nesta aba mostra só o seu próprio cadastro.</div>` : ''}
-    ${(perm.ver_outros && !podeEditar) ? `<div class="section-note">Sua permissão nesta aba é só de visualização — você vê o cadastro de todos, mas não pode editar.</div>` : ''}
-    <div class="section-note">O token fica salvo em texto puro — dá pra ver e editar o token atual de qualquer pessoa aqui embaixo.</div>
+    ${(!perm.ver_outros && perm.ver_proprio) ? `<div class="section-note">Sua permissão nesta aba mostra apenas o seu cadastro.</div>` : ''}
+    <div class="section-note">As contas são criadas com segurança pelo Supabase Auth. Senhas nunca são exibidas ou salvas nesta página.</div>
     <div class="table-wrap" style="margin-bottom:22px;"><table>
-      <thead><tr><th>Nome</th><th>Usuário</th><th>Papel</th><th>Token</th><th></th></tr></thead>
+      <thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th></th></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
     ${podeCriar ? `
     <h3 style="font-size:15px;font-weight:800;margin-bottom:12px;">+ Criar novo usuário</h3>
     <div class="table-wrap"><table><tbody><tr>
       <td><input type="text" class="cell-input" id="nu-nome" placeholder="Nome completo" style="min-width:160px" /></td>
-      <td><input type="text" class="cell-input" id="nu-usuario" placeholder="Usuário" style="min-width:160px" /></td>
-      <td>${buildRolePicker('usuario_engenharia_sac', (v)=>{ nuRoleEscolhido = v; })}</td>
-      <td><input type="text" class="cell-input" id="nu-token" placeholder="Token inicial" style="min-width:140px" /></td>
-      <td><button class="btn btn-primary" id="btn-criar-usuario" style="width:auto">Criar</button></td>
+      <td><input type="email" class="cell-input" id="nu-email" placeholder="E-mail" style="min-width:190px" /></td>
+      <td><select class="cell-input" id="nu-role" style="min-width:190px">${PAPEIS.map(r=>`<option value="${r}">${escapeHtml(ROTULO_PAPEL[r]||r)}</option>`).join('')}</select></td>
+      <td><input type="password" class="cell-input" id="nu-senha" placeholder="Senha inicial (10+ caracteres)" autocomplete="new-password" style="min-width:210px" /></td>
+      <td><button class="btn btn-primary" id="btn-criar-usuario" style="width:auto">Criar conta</button></td>
     </tr></tbody></table></div>
-    ` : ''}
-  `;
+    ` : ''}  `;
 
   document.getElementById('tbody').innerHTML = dadosVisiveis.map(p=>`
-    <tr data-uid="${p.id}">
+    <tr data-uid="${escapeHtml(p.id)}">
       <td>${escapeHtml(p.nome)}</td>
       <td>${escapeHtml(p.usuario)}</td>
       <td>${podeEditar ? buildRolePicker(p.role, async (v, btn)=>{
         const { error } = await sb.rpc('atualizar_role', { p_user_id: p.id, p_role: v });
         if (error) return toast('Erro: '+error.message, true);
         flashSaved(btn); toast('Papel atualizado.');
-      }) : `<span class="role-stamp role-${p.role}">${escapeHtml(ROTULO_PAPEL[p.role]||p.role)}</span>`}</td>
-      <td>${podeEditar ? `<input type="text" class="cell-input token-input" value="${escapeHtml(p.token||'')}" style="min-width:150px" />` : '••••••'}</td>
+      }) : `<span class="role-stamp role-${escapeHtml(p.role)}">${escapeHtml(ROTULO_PAPEL[p.role]||p.role)}</span>`}</td>
+      <td>${p.ativo ? 'Ativo' : 'Inativo'}</td>
       <td class="row-actions">
-        ${podeEditar ? `<button class="icon-btn" data-action="set-token">salvar token</button>` : ''}
-        ${podeExcluirUsuario ? `<button class="icon-btn" data-action="excluir">excluir</button>` : ''}
+        ${(podeExcluirUsuario && p.id!==currentUser.id && p.ativo) ? `<button class="icon-btn" data-action="desativar">desativar</button>` : ''}
       </td>
     </tr>
   `).join('');
 
-  if (podeEditar){
-    document.querySelectorAll('#tbody tr[data-uid]').forEach(tr=>{
-      const uid = tr.dataset.uid;
-      const btnToken = tr.querySelector('[data-action="set-token"]');
-      if (btnToken) btnToken.addEventListener('click', async ()=>{
-        const tokenInput = tr.querySelector('.token-input');
-        if (!tokenInput.value) return toast('Digite um token.', true);
-        const { error } = await sb.rpc('definir_token', { p_user_id: uid, p_novo_token: tokenInput.value });
-        if (error) return toast('Erro: '+error.message, true);
-        flashSaved(tokenInput); toast('Token atualizado com sucesso.');
-      });
-    });
-  }
-  if (podeExcluirUsuario){
-    document.querySelectorAll('#tbody tr[data-uid]').forEach(tr=>{
-      const uid = tr.dataset.uid;
-      const btnExcluir = tr.querySelector('[data-action="excluir"]');
-      if (btnExcluir) btnExcluir.addEventListener('click', async ()=>{
-        if (!(await confirmarAcao('Excluir este usuário? Essa ação não pode ser desfeita.'))) return;
-        const { error } = await sb.rpc('excluir_usuario', { p_user_id: uid });
-        if (error) return toast('Erro: '+error.message, true);
-        toast('Usuário excluído.'); navigateTo('usuarios');
-      });
-    });
-  }
   if (podeCriar){
     document.getElementById('btn-criar-usuario').addEventListener('click', async ()=>{
       const nome = document.getElementById('nu-nome').value.trim();
-      const usuario = document.getElementById('nu-usuario').value.trim();
-      const role = nuRoleEscolhido;
-      const token = document.getElementById('nu-token').value;
-      if (!nome || !usuario || !token) return toast('Preencha nome, usuário e token.', true);
-      const { error } = await sb.rpc('criar_usuario', { p_nome: nome, p_usuario: usuario, p_token: token, p_role: role });
-      if (error) return toast('Erro: '+error.message, true);
-      toast('Usuário criado.'); navigateTo('usuarios');
+      const email = document.getElementById('nu-email').value.trim().toLowerCase();
+      const role = document.getElementById('nu-role').value;
+      const password = document.getElementById('nu-senha').value;
+      if (!nome || !email || !password) return toast('Preencha nome, e-mail e senha.', true);
+      if (password.length < 10) return toast('A senha precisa ter pelo menos 10 caracteres.', true);
+      const btn = document.getElementById('btn-criar-usuario');
+      btn.disabled = true; btn.textContent = 'Criando…';
+      const { data: result, error: invokeError } = await sb.functions.invoke('admin-users', { body: { action:'create', nome, email, role, password } });
+      btn.disabled = false; btn.textContent = 'Criar conta';
+      if (invokeError || !result || result.error) return toast('Erro: '+(result?.error || invokeError?.message || 'falha ao criar conta'), true);
+      document.getElementById('nu-senha').value = '';
+      toast('Conta criada com sucesso.');
+      navigateTo('usuarios');
+    });
+  }
+  if (podeExcluirUsuario){
+    document.querySelectorAll('#tbody [data-action="desativar"]').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const uid = btn.closest('tr').dataset.uid;
+        if (!(await confirmarAcao('Desativar este usuário? A conta perderá acesso ao aplicativo.'))) return;
+        const { error } = await sb.rpc('excluir_usuario', { p_user_id: uid });
+        if (error) return toast('Erro: '+error.message, true);
+        toast('Usuário desativado.');
+        navigateTo('usuarios');
+      });
     });
   }
 
@@ -4045,12 +4023,12 @@ window.showDiff = function(rowJson){
   const keys = Array.from(new Set([...Object.keys(oldData), ...Object.keys(newData)])).filter(k=>!['created_at','updated_at'].includes(k));
   const backdrop = document.getElementById('modal-backdrop');
   const modal = document.getElementById('modal-content');
-  modal.innerHTML = `<h3>Detalhes — ${r.tabela} (${r.acao})</h3>
+  modal.innerHTML = `<h3>Detalhes — ${escapeHtml(r.tabela)} (${escapeHtml(r.acao)})</h3>
     <div class="table-wrap" style="max-height:50vh;overflow:auto;"><table>
       <thead><tr><th>Campo</th><th>Antes</th><th>Depois</th></tr></thead>
       <tbody>${keys.map(k=>{
         const ov=oldData[k], nv=newData[k]; const changed = JSON.stringify(ov)!==JSON.stringify(nv);
-        return `<tr><td>${k}</td>
+        return `<tr><td>${escapeHtml(k)}</td>
           <td class="${changed && r.acao!=='INSERT' ? 'diff-old':''}">${ov===undefined?'':escapeHtml(String(ov))}</td>
           <td class="${changed && r.acao!=='DELETE' ? 'diff-new':''}">${nv===undefined?'':escapeHtml(String(nv))}</td></tr>`;
       }).join('')}</tbody>
@@ -4110,14 +4088,23 @@ document.getElementById('lightbox-backdrop').addEventListener('click', ()=>{
 
 // ── Detalhes (descrição, checklists, imagens do Google Drive) ─────────────
 // Funciona tanto pra Projetos quanto pra Chamados do SAC.
+const IMAGE_HOSTS_PERMITIDOS = new Set(['drive.google.com', 'lh3.googleusercontent.com']);
+function validarUrlImagem(valor){
+  try{
+    const url = new URL((valor||'').trim());
+    const hostPermitido = IMAGE_HOSTS_PERMITIDOS.has(url.hostname) || /^[a-z0-9-]+\.supabase\.co$/i.test(url.hostname);
+    return url.protocol === 'https:' && hostPermitido ? url.href : null;
+  }catch{
+    return null;
+  }
+}
 function converterLinkDrive(url){
-  const u = (url||'').trim();
+  const u = validarUrlImagem(url);
+  if (!u) return '';
   let m = /\/file\/d\/([^/]+)/.exec(u);
   if (!m) m = /[?&]id=([^&]+)/.exec(u);
-  // O endpoint "uc?export=view" do Drive costuma ser bloqueado/instável pra
-  // uso como <img>. O endpoint de thumbnail é bem mais confiável pra isso.
-  if (m) return `https://drive.google.com/thumbnail?id=${m[1]}&sz=w1000`;
-  return u; // já deve ser um link direto de imagem
+  if (m) return `https://drive.google.com/thumbnail?id=${encodeURIComponent(m[1])}&sz=w1000`;
+  return u;
 }
 
 const DETALHE_CONFIG = {
@@ -4553,8 +4540,8 @@ window.abrirDetalhes = async function(tabela, id){
 
   document.getElementById('btn-add-imagem').addEventListener('click', async ()=>{
     const inp = document.getElementById('nova-imagem-url');
-    const url = inp.value.trim();
-    if (!url) return;
+    const url = validarUrlImagem(inp.value);
+    if (!url) return toast('Use uma URL HTTPS do Google Drive ou do Storage autorizado.', true);
     const { data: nova, error } = await sb.from(cfg.imagensTable).insert({ [cfg.imagensFk]: id, url }).select().single();
     if (error) return toast('Erro: '+error.message, true);
     inp.value = '';
@@ -5325,7 +5312,8 @@ async function viewDashboard(){
 }
 
 (async ()=>{
-  if (localStorage.getItem('sessao-tarefas-app')) await bootAfterLogin();
+  const { data } = await sb.auth.getSession();
+  if (data && data.session) await bootAfterLogin();
 })();
 </script>
 </body>
